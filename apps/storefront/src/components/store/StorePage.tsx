@@ -1,62 +1,26 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { useStore } from '../hooks/useStore';
-import { useMenu } from '../hooks/useMenu';
-import { useCart } from '../hooks/useCart';
-import { StoreBanner } from './components/store/StoreBanner';
-import { CategoryTabs } from './components/menu/CategoryTabs';
-import { ProductGrid } from './components/menu/ProductGrid';
-import { ProductDetail } from './components/menu/ProductDetail';
-import { MenuItem } from '../types/product';
-import { SearchBar } from './components/menu/SearchBar';
+import React from 'react';
+import { useStore } from '../../hooks/useStore';
+import { useMenu } from '../../hooks/useMenu';
+import { useCart } from '../../hooks/useCart';
+import { StoreBanner } from './StoreBanner';
+import { CategoryTabs } from '../menu/CategoryTabs';
+import { ProductGrid } from '../menu/ProductGrid';
+import { ProductDetail } from '../menu/ProductDetail';
+import { MenuItem } from '../../types/product';
+import { SearchBar } from '../menu/SearchBar';
 
-export const StorePage: React.FC = () => {
-  const { slug } = useParams<{ slug: string }>();
-  const { store, isLoading: storeLoading } = useStore(slug || '');
-  const { 
-    menuItems, 
-    categories, 
-    activeCategoryId, 
-    setActiveCategoryId,
-    searchQuery,
-    setSearchQuery,
-    isLoading: menuLoading 
-  } = useMenu(slug || '');
-  const { items: cartItems, addItem, updateQty } = useCart(slug || '');
-
-  const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
-
-  if (storeLoading) return <div className="p-8 text-center text-gray-500 font-medium animate-pulse">Memuat Toko...</div>;
-  if (!store) return <div className="p-12 text-center text-gray-700 font-black text-xl">Toko Tidak Ditemukan</div>;
-
+export const StorePage = () => {
   return (
-    <div className="flex flex-col gap-6">
-      <StoreBanner store={store} />
-      
-      <div className="px-4">
-        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <StoreBanner />
+      <div className="sticky top-0 z-10 bg-white border-b shadow-sm">
+        <SearchBar />
+        <CategoryTabs />
       </div>
-
-      <CategoryTabs 
-        categories={categories} 
-        activeCategoryId={activeCategoryId} 
-        onSelect={setActiveCategoryId} 
-      />
-
-      <ProductGrid 
-        items={menuItems}
-        cartItems={cartItems}
-        onAdd={(p) => addItem(p, 1)}
-        onRemove={(p) => updateQty(p.id, -1)}
-        onProductClick={setSelectedProduct}
-      />
-
-      <ProductDetail 
-        product={selectedProduct}
-        isOpen={!!selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-        onAdd={addItem}
-      />
+      <main className="container mx-auto px-4 py-6">
+        <ProductGrid />
+      </main>
+      <ProductDetail />
     </div>
   );
 };
