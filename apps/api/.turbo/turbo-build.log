@@ -1,0 +1,11 @@
+
+> @warung-bujo/api@0.0.0 build D:\Developer Apps\Warung BuJo\apps\api
+> tsup src/index.ts
+
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v7.3.0
+[34mCLI[39m Target: esnext
+[34mCJS[39m Build start
+[32mCJS[39m [1mdist\index.js [22m[32m17.54 KB[39m
+[32mCJS[39m ⚡️ Build success in 6119ms
