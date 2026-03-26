@@ -209,11 +209,16 @@ export async function assignOrderDriver(db: any, orderId: string, driverName: st
   });
 }
 
+/**
+ * Simple UUID v4/v1 validation regex
+ */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function getAdminOrders(db: any, filters: { branchId?: string; status?: string; date?: string }) {
   let query = db.select().from(onlineOrders).orderBy(desc(onlineOrders.createdAt));
   
   const conditions = [];
-  if (filters.branchId) {
+  if (filters.branchId && UUID_REGEX.test(filters.branchId)) {
     conditions.push(eq(onlineOrders.branchId, filters.branchId));
   }
   if (filters.status) {

@@ -61,10 +61,10 @@ interface TransferLine {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const branches = [
-  { id: 'CBG-001', name: 'Malang Pusat', isPrimary: true },
-  { id: 'CBG-002', name: 'Malang Kayutangan', isPrimary: false },
-  { id: 'CBG-003', name: 'Surabaya Barat', isPrimary: false },
-  { id: 'CBG-004', name: 'Jakarta Selatan', isPrimary: false },
+  { id: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1', name: 'Malang Pusat', isPrimary: true },
+  { id: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2', name: 'Malang Kayutangan', isPrimary: false },
+  { id: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d3', name: 'Surabaya Barat', isPrimary: false },
+  { id: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d4', name: 'Jakarta Selatan', isPrimary: false },
 ];
 
 const suppliers = [
@@ -371,7 +371,7 @@ function AddMaterialModal({
       stok: parseFloat(form.stok),
       stokMin: parseFloat(form.stokMin),
       harga: parseInt(form.harga),
-      branchId: 'CBG-001',
+      branchId: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1',
       branchName: 'Malang Pusat',
     });
     onClose();
@@ -548,14 +548,14 @@ function BahanBakuTab({
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
 
-  const hqStock = [...getBranchStock('CBG-001').map(item => ({
+  const hqStock = [...getBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1').map(item => ({
     id: item.materialId,
     nama: item.materialName,
     satuan: item.satuan,
     stok: item.stok,
     stokMin: item.stokMin,
     harga: item.harga,
-    branchId: 'CBG-001',
+    branchId: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1',
     branchName: 'Malang Pusat',
   })), ...customMaterials];
   const lowCount = hqStock.filter(m => m.stok <= m.stokMin).length;
@@ -655,14 +655,14 @@ function BahanBakuTab({
 
 function BOMTab() {
   const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
-  const allStock: StockEntry[] = getBranchStock('CBG-001').map(item => ({
+  const allStock: StockEntry[] = getBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1').map(item => ({
     id: item.materialId,
     nama: item.materialName,
     satuan: item.satuan,
     stok: item.stok,
     stokMin: item.stokMin,
     harga: item.harga,
-    branchId: 'CBG-001',
+    branchId: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1',
     branchName: 'Malang Pusat',
   }));
 
@@ -769,7 +769,7 @@ let lineKeyCounter = 10;
 
 function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
   const [supplier, setSupplier] = useState('');
-  const [targetBranch, setTargetBranch] = useState('CBG-001');
+  const [targetBranch, setTargetBranch] = useState('dfda8a9c-7e8e-4a8e-9522-320e52e189d1');
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<PurchaseLine[]>([
     { key: 1, productId: '', productName: '', qty: '', totalAmount: '', unitPrice: '' },
@@ -849,7 +849,7 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
   };
 
   const handleReset = () => {
-    setSupplier(''); setTargetBranch('CBG-001'); setNotes('');
+    setSupplier(''); setTargetBranch('dfda8a9c-7e8e-4a8e-9522-320e52e189d1'); setNotes('');
     setLines([{ key: ++lineKeyCounter, productId: '', productName: '', qty: '', totalAmount: '', unitPrice: '' }]);
     setSubmitted(false); setSavedPrices([]);
   };
@@ -1087,7 +1087,7 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function DistribusiTab() {
-  const [fromBranch] = useState('CBG-001');
+  const [fromBranch] = useState('dfda8a9c-7e8e-4a8e-9522-320e52e189d1');
   const [toBranch, setToBranch] = useState('');
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<TransferLine[]>([
@@ -1096,14 +1096,14 @@ function DistribusiTab() {
   const [submitted, setSubmitted] = useState(false);
   const [lastSTR, setLastSTR] = useState('');
 
-  const hqStock: StockEntry[] = getBranchStock('CBG-001').map(item => ({
+  const hqStock: StockEntry[] = getBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1').map(item => ({
     id: item.materialId,
     nama: item.materialName,
     satuan: item.satuan,
     stok: item.stok,
     stokMin: item.stokMin,
     harga: item.harga,
-    branchId: 'CBG-001',
+    branchId: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1',
     branchName: 'Malang Pusat',
   }));
 
@@ -1134,8 +1134,8 @@ function DistribusiTab() {
   const handleSubmit = () => {
     if (hasError) return;
     const strNum = `STR-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`;
-    // Deduct from source (CBG-001) and add to target branch
-    const srcStock = getBranchStock('CBG-001');
+    // Deduct from source (dfda8a9c-7e8e-4a8e-9522-320e52e189d1) and add to target branch
+    const srcStock = getBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1');
     const dstStock = getBranchStock(toBranch);
     lines.forEach(l => {
       const qty = parseFloat(l.qty) || 0;
@@ -1152,7 +1152,7 @@ function DistribusiTab() {
         dstStock.push({ materialId: l.productId, materialName: l.productName, satuan: srcItem?.satuan ?? 'unit', stok: qty, stokMin: 0, harga: srcItem?.harga ?? 0 });
       }
     });
-    saveBranchStock('CBG-001', srcStock);
+    saveBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1', srcStock);
     saveBranchStock(toBranch, dstStock);
     setLastSTR(strNum);
     setSubmitted(true);
@@ -1358,14 +1358,14 @@ export default function Inventory() {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [customMaterials, setCustomMaterials] = useState<StockEntry[]>([]);
 
-  const allHqStock: StockEntry[] = [...getBranchStock('CBG-001').map(item => ({
+  const allHqStock: StockEntry[] = [...getBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1').map(item => ({
     id: item.materialId,
     nama: item.materialName,
     satuan: item.satuan,
     stok: item.stok,
     stokMin: item.stokMin,
     harga: item.harga,
-    branchId: 'CBG-001',
+    branchId: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1',
     branchName: 'Malang Pusat',
   })), ...customMaterials];
   const alertCount = allHqStock.filter(s => s.stok <= s.stokMin * 0.5).length;

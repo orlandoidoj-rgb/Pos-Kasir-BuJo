@@ -1,7 +1,10 @@
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { drivers, onlineOrders, onlineOrderLines, onlineOrderStatusLog, onlineCustomers } from '@warung-bujo/database';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function getDriversByBranch(db: any, branchId: string) {
+  if (!branchId || !UUID_REGEX.test(branchId)) return [];
   return db.select().from(drivers).where(eq(drivers.branchId, branchId)).orderBy(drivers.name);
 }
 

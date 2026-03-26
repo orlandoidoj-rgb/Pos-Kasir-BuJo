@@ -6,7 +6,7 @@ import { TX_STORAGE } from '../config';
 export function useSession() {
   const [screen, setScreen] = useState<Screen>('login');
   const [cashierName, setCashierName] = useState('');
-  const [selectedBranchId, setSelectedBranchId] = useState<string>('CBG-001');
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
   const [branches, setBranches] = useState<BranchInfo[]>(loadBranches);
   
   const [orderSetup, setOrderSetup] = useState<OrderSetup>({

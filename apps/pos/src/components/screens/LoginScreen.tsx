@@ -12,7 +12,7 @@ export default function LoginScreen({ branches, onLogin }: LoginScreenProps) {
   const activeBranches = branches.filter(b => b.status === 'active');
   const [branchId, setBranchId] = React.useState(() => {
     const p = activeBranches.find(b => b.isOwnerPrimary);
-    return p?.id ?? activeBranches[0]?.id ?? 'CBG-001';
+    return p?.id ?? activeBranches[0]?.id ?? '';
   });
   const [cashierName, setCashierName] = React.useState('');
   const [error, setError] = React.useState('');

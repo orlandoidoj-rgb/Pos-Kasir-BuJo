@@ -4,9 +4,9 @@ import { BRANCHES_KEY, STORAGE_KEY, TX_STORAGE, DEFAULT_PRODUCTS } from '../conf
 export function loadBranches(): BranchInfo[] {
   try {
     const raw = localStorage.getItem(BRANCHES_KEY);
-    if (!raw) return [{ id:'CBG-001', nama:'Malang Pusat', status:'active', isOwnerPrimary:true }];
+    if (!raw) return [];
     return JSON.parse(raw) as BranchInfo[];
-  } catch { return [{ id:'CBG-001', nama:'Malang Pusat', status:'active', isOwnerPrimary:true }]; }
+  } catch { return []; }
 }
 
 export function loadAllProducts(): POSProduct[] {
@@ -18,7 +18,7 @@ export function loadAllProducts(): POSProduct[] {
       id: p.id, name: p.name, hpp: p.purchasePrice ?? 0,
       allPrices: p.prices ?? {'Dine-in':0,'Take-away':0,'Shopee':0,'Grab':0,'Gofood':0},
       category: p.categoryId, image: p.image, unit: p.unit,
-      branchActivations: p.branchActivations ?? {'CBG-001':true},
+      branchActivations: p.branchActivations ?? {},
     }));
     return mapped.length > 0 ? mapped : DEFAULT_PRODUCTS;
   } catch { return DEFAULT_PRODUCTS; }

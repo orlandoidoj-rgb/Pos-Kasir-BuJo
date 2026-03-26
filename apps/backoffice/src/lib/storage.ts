@@ -45,10 +45,10 @@ export interface Branch {
 }
 
 export const DEFAULT_BRANCHES: Branch[] = [
-  { id: 'CBG-001', nama: 'Malang Pusat',      alamat: 'Jl. Kawi No. 12',         kota: 'Malang',   status: 'active',   manager: 'Budi Santoso',    telp: '0341-123456', isOwnerPrimary: true },
-  { id: 'CBG-002', nama: 'Malang Kayutangan', alamat: 'Jl. Basuki Rahmat No. 5', kota: 'Malang',   status: 'active',   manager: 'Siti Rahayu',     telp: '0341-234567' },
-  { id: 'CBG-003', nama: 'Surabaya Barat',    alamat: 'Jl. Raya Darmo No. 88',   kota: 'Surabaya', status: 'active',   manager: 'Agus Kurniawan',  telp: '031-345678'  },
-  { id: 'CBG-004', nama: 'Jakarta Selatan',   alamat: 'Jl. Kemang Raya No. 21',  kota: 'Jakarta',  status: 'inactive', manager: '(belum ditentukan)', telp: '—' },
+  { id: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1', nama: 'Malang Pusat',      alamat: 'Jl. Kawi No. 12',         kota: 'Malang',   status: 'active',   manager: 'Budi Santoso',    telp: '0341-123456', isOwnerPrimary: true },
+  { id: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2', nama: 'Malang Kayutangan', alamat: 'Jl. Basuki Rahmat No. 5', kota: 'Malang',   status: 'active',   manager: 'Siti Rahayu',     telp: '0341-234567' },
+  { id: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d3', nama: 'Surabaya Barat',    alamat: 'Jl. Raya Darmo No. 88',   kota: 'Surabaya', status: 'active',   manager: 'Agus Kurniawan',  telp: '031-345678'  },
+  { id: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d4', nama: 'Jakarta Selatan',   alamat: 'Jl. Kemang Raya No. 21',  kota: 'Jakarta',  status: 'inactive', manager: '(belum ditentukan)', telp: '—' },
 ];
 
 export function getBranches(): Branch[] {
@@ -205,55 +205,55 @@ export const DEFAULT_PRODUCTS: MasterProduct[] = [
     purchasePrice: 10000,
     image: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?q=80&w=800&auto=format&fit=crop',
     imagePath: 'menu-utama/ayam-penyet-lalapan/',
-    branchActivations: { 'CBG-001': true, 'CBG-002': true, 'CBG-003': true, 'CBG-004': false } },
+    branchActivations: { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': false } },
   { id: 'PRD-002', name: 'Bebek Bakar Madu', categoryId: '1', unit: 'Porsi', isSellable: true, isActive: true,
     prices: { 'Dine-in': 35000, 'Take-away': 35000, 'Shopee': 38000, 'Grab': 38000, 'Gofood': 38000 },
     purchasePrice: 14000,
     image: 'https://images.unsplash.com/photo-1518492104633-130d0cc84637?q=80&w=800&auto=format&fit=crop',
     imagePath: 'menu-utama/bebek-bakar-madu/',
-    branchActivations: { 'CBG-001': true, 'CBG-002': false, 'CBG-003': true, 'CBG-004': false } },
+    branchActivations: { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': false, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': false } },
   { id: 'PRD-003', name: 'Lele Goreng Crispy', categoryId: '1', unit: 'Porsi', isSellable: true, isActive: true,
     prices: { 'Dine-in': 18000, 'Take-away': 18000, 'Shopee': 20000, 'Grab': 20000, 'Gofood': 20000 },
     purchasePrice: 7000,
     image: 'https://images.unsplash.com/photo-1598511726623-d3455a1d713c?q=80&w=800&auto=format&fit=crop',
     imagePath: 'menu-utama/lele-goreng-crispy/',
-    branchActivations: { 'CBG-001': true, 'CBG-002': true, 'CBG-003': true, 'CBG-004': false } },
+    branchActivations: { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': false } },
   { id: 'PRD-004', name: 'Nasi Goreng Spesial', categoryId: '1', unit: 'Porsi', isSellable: true, isActive: true,
     prices: { 'Dine-in': 22000, 'Take-away': 22000, 'Shopee': 24000, 'Grab': 24000, 'Gofood': 24000 },
     purchasePrice: 8200,
     image: 'https://images.unsplash.com/photo-1562802378-063ec186a863?q=80&w=800&auto=format&fit=crop',
     imagePath: 'menu-utama/nasi-goreng-spesial/',
-    branchActivations: { 'CBG-001': true, 'CBG-002': true, 'CBG-003': true, 'CBG-004': false } },
+    branchActivations: { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': false } },
   { id: 'PRD-005', name: 'Tempe & Tahu Bacem', categoryId: '2', unit: 'Porsi', isSellable: true, isActive: true,
     prices: { 'Dine-in': 8000, 'Take-away': 8000, 'Shopee': 9000, 'Grab': 9000, 'Gofood': 9000 },
     purchasePrice: 3000,
     image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
     imagePath: 'tambahan/tempe-tahu-bacem/',
-    branchActivations: { 'CBG-001': true, 'CBG-002': true, 'CBG-003': false, 'CBG-004': false } },
+    branchActivations: { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': false, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': false } },
   { id: 'PRD-006', name: 'Kerupuk Udang', categoryId: '2', unit: 'Porsi', isSellable: true, isActive: true,
     prices: { 'Dine-in': 3000, 'Take-away': 3000, 'Shopee': 4000, 'Grab': 4000, 'Gofood': 4000 },
     purchasePrice: 1000,
     image: '',
     imagePath: 'tambahan/kerupuk-udang/',
-    branchActivations: { 'CBG-001': true, 'CBG-002': true, 'CBG-003': true, 'CBG-004': false } },
+    branchActivations: { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': false } },
   { id: 'PRD-007', name: 'Es Teh Manis Jumbo', categoryId: '3', unit: 'Gelas', isSellable: true, isActive: true,
     prices: { 'Dine-in': 5000, 'Take-away': 5000, 'Shopee': 6000, 'Grab': 6000, 'Gofood': 6000 },
     purchasePrice: 850,
     image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?q=80&w=800&auto=format&fit=crop',
     imagePath: 'minuman/es-teh-manis-jumbo/',
-    branchActivations: { 'CBG-001': true, 'CBG-002': true, 'CBG-003': true, 'CBG-004': false } },
+    branchActivations: { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': false } },
   { id: 'PRD-008', name: 'Es Jeruk Nipis', categoryId: '3', unit: 'Gelas', isSellable: true, isActive: true,
     prices: { 'Dine-in': 7000, 'Take-away': 7000, 'Shopee': 8000, 'Grab': 8000, 'Gofood': 8000 },
     purchasePrice: 1500,
     image: 'https://images.unsplash.com/photo-1621236378699-8597faa64b0f?q=80&w=800&auto=format&fit=crop',
     imagePath: 'minuman/es-jeruk-nipis/',
-    branchActivations: { 'CBG-001': true, 'CBG-002': true, 'CBG-003': true, 'CBG-004': false } },
+    branchActivations: { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': false } },
   { id: 'PRD-009', name: 'Paket Hemat A', categoryId: '4', unit: 'Paket', isSellable: true, isActive: true,
     prices: { 'Dine-in': 28000, 'Take-away': 28000, 'Shopee': 30000, 'Grab': 30000, 'Gofood': 30000 },
     purchasePrice: 12000,
     image: '',
     imagePath: 'paket-hemat/paket-hemat-a/',
-    branchActivations: { 'CBG-001': true, 'CBG-002': true, 'CBG-003': false, 'CBG-004': false } },
+    branchActivations: { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': true, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': false, 'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': false } },
 ];
 
 export function getProducts(): MasterProduct[] {
@@ -264,7 +264,7 @@ export function getProducts(): MasterProduct[] {
     // Migrate: ensure branchActivations exists on every product
     return stored.map(p => ({
       ...p,
-      branchActivations: p.branchActivations ?? { 'CBG-001': true },
+      branchActivations: p.branchActivations ?? { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true },
     }));
   } catch { return [...DEFAULT_PRODUCTS]; }
 }
@@ -292,7 +292,7 @@ export interface BranchStockItem {
 }
 
 export const DEFAULT_BRANCH_STOCK: Record<string, BranchStockItem[]> = {
-  'CBG-001': [
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': [
     { materialId: 'BHN-001', materialName: 'Beras Pandan',  satuan: 'Kg',    stok: 45,  stokMin: 10, harga: 12000 },
     { materialId: 'BHN-002', materialName: 'Ayam Fillet',   satuan: 'Kg',    stok: 8.5, stokMin: 5,  harga: 45000 },
     { materialId: 'BHN-003', materialName: 'Minyak Goreng', satuan: 'Liter', stok: 20,  stokMin: 8,  harga: 18000 },
@@ -302,7 +302,7 @@ export const DEFAULT_BRANCH_STOCK: Record<string, BranchStockItem[]> = {
     { materialId: 'BHN-007', materialName: 'Sambal Terasi', satuan: 'Kg',    stok: 2.1, stokMin: 3,  harga: 25000 },
     { materialId: 'BHN-008', materialName: 'Tepung Terigu', satuan: 'Kg',    stok: 30,  stokMin: 10, harga: 9000  },
   ],
-  'CBG-002': [
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': [
     { materialId: 'BHN-001', materialName: 'Beras Pandan',  satuan: 'Kg',    stok: 12,  stokMin: 8,  harga: 12000 },
     { materialId: 'BHN-002', materialName: 'Ayam Fillet',   satuan: 'Kg',    stok: 3,   stokMin: 4,  harga: 45000 },
     { materialId: 'BHN-003', materialName: 'Minyak Goreng', satuan: 'Liter', stok: 6,   stokMin: 4,  harga: 18000 },
@@ -310,13 +310,13 @@ export const DEFAULT_BRANCH_STOCK: Record<string, BranchStockItem[]> = {
     { materialId: 'BHN-006', materialName: 'Gula Pasir',    satuan: 'Kg',    stok: 5,   stokMin: 3,  harga: 14000 },
     { materialId: 'BHN-007', materialName: 'Sambal Terasi', satuan: 'Kg',    stok: 0.8, stokMin: 2,  harga: 25000 },
   ],
-  'CBG-003': [
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': [
     { materialId: 'BHN-001', materialName: 'Beras Pandan',  satuan: 'Kg',    stok: 20,  stokMin: 8,  harga: 12000 },
     { materialId: 'BHN-002', materialName: 'Ayam Fillet',   satuan: 'Kg',    stok: 5,   stokMin: 4,  harga: 45000 },
     { materialId: 'BHN-003', materialName: 'Minyak Goreng', satuan: 'Liter', stok: 10,  stokMin: 6,  harga: 18000 },
     { materialId: 'BHN-006', materialName: 'Gula Pasir',    satuan: 'Kg',    stok: 2,   stokMin: 3,  harga: 14000 },
   ],
-  'CBG-004': [],
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': [],
 };
 
 export function getBranchStock(branchId: string): BranchStockItem[] {
@@ -471,7 +471,7 @@ export const DEFAULT_VOUCHERS: Voucher[] = [
     id: 'VCH-002', code: 'HEMAT5K', description: 'Diskon Rp 5.000 min. belanja Rp 30.000',
     type: 'fixed', value: 5000, minOrder: 30000, maxDiscount: 0,
     expiry: '2026-06-30', usageLimit: 50, usageCount: 8,
-    branchIds: ['CBG-001', 'CBG-002'], isActive: true, createdAt: '2026-01-15',
+    branchIds: ['dfda8a9c-7e8e-4a8e-9522-320e52e189d1', 'dfda8a9c-7e8e-4a8e-9522-320e52e189d2'], isActive: true, createdAt: '2026-01-15',
   },
   {
     id: 'VCH-003', code: 'GRANDBUKA', description: 'Gratis ongkir Rp 10.000',

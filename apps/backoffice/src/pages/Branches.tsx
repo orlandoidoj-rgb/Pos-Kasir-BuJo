@@ -24,28 +24,28 @@ interface BranchUser {
 }
 
 const BRANCH_USERS: Record<string, BranchUser[]> = {
-  'CBG-001': [
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': [
     { id: 'USR-002', nama: 'Budi Santoso',   role: 'admin', status: 'active',   avatar: 'BS', lastLogin: '2026-03-19 09:15' },
     { id: 'USR-004', nama: 'Ahmad Kasir',     role: 'kasir', status: 'active',   avatar: 'AH', lastLogin: '2026-03-19 10:00' },
     { id: 'USR-005', nama: 'Dewi Kasir',      role: 'kasir', status: 'active',   avatar: 'DW', lastLogin: '2026-03-19 10:05' },
     { id: 'USR-008', nama: 'Lina (Nonaktif)', role: 'kasir', status: 'inactive', avatar: 'LN', lastLogin: '2026-02-15 09:00' },
   ],
-  'CBG-002': [
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': [
     { id: 'USR-003', nama: 'Siti Rahayu', role: 'admin', status: 'active', avatar: 'SR', lastLogin: '2026-03-18 17:00' },
     { id: 'USR-006', nama: 'Roni Kasir',  role: 'kasir', status: 'active', avatar: 'RN', lastLogin: '2026-03-18 22:30' },
   ],
-  'CBG-003': [
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': [
     { id: 'USR-007', nama: 'Agus Kurniawan', role: 'admin', status: 'active', avatar: 'AK', lastLogin: '2026-03-17 14:20' },
   ],
-  'CBG-004': [],
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': [],
 };
 
 // Fallback pendapatan mock untuk tiap cabang (dipakai jika belum ada data real POS)
 const MOCK_PENDAPATAN: Record<string, number> = {
-  'CBG-001': 5200000,
-  'CBG-002': 3800000,
-  'CBG-003': 4100000,
-  'CBG-004': 0,
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': 5200000,
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': 3800000,
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': 4100000,
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': 0,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

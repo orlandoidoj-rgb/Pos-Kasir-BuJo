@@ -9,6 +9,6 @@ export const DEFAULT_PRODUCTS: POSProduct[] = [
     unit: 'Porsi',
     allPrices: {'Dine-in':25000,'Take-away':25000,'Shopee':27000,'Grab':27000,'Gofood':27000},
     image: 'https://images.unsplash.com/photo-1562802378-063ec186a863?q=80&w=800&auto=format&fit=crop',
-    branchActivations: {'CBG-001':true} 
+    branchActivations: {} 
   },
 ];

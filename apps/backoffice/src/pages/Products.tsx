@@ -35,7 +35,12 @@ const UNITS = ['Porsi', 'Pcs', 'Gelas', 'Set', 'Kg', 'Liter', 'Kotak'];
 // Default products
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DEFAULT_BRANCH_ACTIVATIONS = { 'CBG-001': true, 'CBG-002': true, 'CBG-003': true, 'CBG-004': false };
+const DEFAULT_BRANCH_ACTIVATIONS = { 
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true, 
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': true, 
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': true, 
+  'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': false 
+};
 
 const DEFAULT_PRODUCTS: MasterProduct[] = [
   {
@@ -131,7 +136,7 @@ function migrateProduct(raw: any): MasterProduct {
     imagePath: raw.imagePath ?? `${slugify(CATEGORIES.find((c: {id:string}) => c.id === raw.categoryId)?.name ?? 'lainnya')}/${slugify(raw.name)}`,
   };
   // Ensure branchActivations exists
-  if (!base.branchActivations) base.branchActivations = { 'CBG-001': true };
+  if (!base.branchActivations) base.branchActivations = { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true };
   return base as MasterProduct;
 }
 
@@ -257,7 +262,7 @@ function ProductModal({ initial, onSave, onClose }: {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
     const id = initial?.id ?? `PRD-${String(Date.now()).slice(-6)}`;
-    onSave({ id, ...form, branchActivations: initial?.branchActivations ?? { 'CBG-001': true } });
+    onSave({ id, ...form, branchActivations: initial?.branchActivations ?? { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true } });
   };
 
   const catName = CATEGORIES.find(c => c.id === form.categoryId)?.name ?? '';

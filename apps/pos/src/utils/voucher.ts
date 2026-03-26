@@ -7,7 +7,7 @@ export function validateVoucherLocal(code: string, orderTotal: number, branchId:
     }>;
     const all = vouchers.length > 0 ? vouchers : [
       { id:'VCH-001',code:'SELAMAT10',type:'percentage' as const,value:10,minOrder:20000,maxDiscount:15000,expiry:'2026-12-31',usageLimit:100,usageCount:12,branchIds:[],isActive:true },
-      { id:'VCH-002',code:'HEMAT5K',type:'fixed' as const,value:5000,minOrder:30000,maxDiscount:0,expiry:'2026-06-30',usageLimit:50,usageCount:8,branchIds:['CBG-001','CBG-002'],isActive:true },
+      { id:'VCH-002',code:'HEMAT5K',type:'fixed' as const,value:5000,minOrder:30000,maxDiscount:0,expiry:'2026-06-30',usageLimit:50,usageCount:8,branchIds:[],isActive:true },
     ];
     const v = all.find(x => x.code.toUpperCase() === code.toUpperCase().trim());
     if (!v) return { valid: false, discount: 0, message: 'Kode tidak ditemukan' };
