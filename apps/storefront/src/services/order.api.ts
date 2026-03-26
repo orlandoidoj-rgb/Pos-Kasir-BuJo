@@ -1,5 +1,5 @@
 import { request } from "./api";
-import { CheckoutInput, OnlineOrder } from "../types/order";
+import { CheckoutInput, OnlineOrder } from "@/types/order";
 
 export async function checkout(slug: string, input: CheckoutInput): Promise<{
   orderId: string;

@@ -1,6 +1,6 @@
 import { request } from "./api";
-import { Customer, CustomerRegisterInput } from "../types/customer";
-import { OnlineOrder } from "../types/order";
+import { Customer, CustomerRegisterInput } from "@/types/customer";
+import { OnlineOrder } from "@/types/order";
 
 export async function registerCustomer(input: CustomerRegisterInput): Promise<Customer & { isNew: boolean }> {
   return request<Customer & { isNew: boolean }>(`/api/online/customer/register`, {

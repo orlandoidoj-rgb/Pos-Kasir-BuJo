@@ -23,7 +23,7 @@ export function useOnlineOrders(branchId: string) {
       const data = await onlineApi.getOrders(branchId);
       setOrders(data);
       
-      const newPendingCount = data.filter(o => o.status === 'Paid').length;
+      const newPendingCount = data.filter(o => ['Paid', 'Pending'].includes(o.status)).length;
       setPendingCount(newPendingCount);
       
       // Sound logic: if pending count increased
@@ -34,7 +34,7 @@ export function useOnlineOrders(branchId: string) {
 
       // New badge logic: check if latest order ID is different from last seen
       const latestOrder = data.length > 0 ? data[0] : null; // Assuming sorted by date desc
-      if (latestOrder && latestOrder.id !== lastSeenIdRef.current && latestOrder.status === 'Paid') {
+      if (latestOrder && latestOrder.id !== lastSeenIdRef.current && ['Paid', 'Pending'].includes(latestOrder.status)) {
         setHasNew(true);
       } else {
         setHasNew(false);
@@ -51,7 +51,7 @@ export function useOnlineOrders(branchId: string) {
 
   useEffect(() => {
     fetchOrders(false);
-    const interval = setInterval(() => fetchOrders(true), 15000);
+    const interval = setInterval(() => fetchOrders(true), 5000);
     return () => clearInterval(interval);
   }, [fetchOrders]);
 

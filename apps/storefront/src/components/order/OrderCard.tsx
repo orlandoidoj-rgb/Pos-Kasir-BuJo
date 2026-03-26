@@ -1,55 +1,80 @@
-import React from 'react';
 import { OnlineOrder } from '../../types/order';
-import { formatRupiah, formatDate } from '../../utils/format';
-import { Badge } from '../ui/Badge';
-import { ChevronRight, Package, Truck, Store } from 'lucide-react';
+import { StatusBadge } from '../ui/Badge';
+import { formatRupiah, formatTime } from '../../utils/format';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Eye, MessageCircle, RefreshCw, Star } from 'lucide-react';
 
 interface OrderCardProps {
   order: OnlineOrder;
-  onClick: () => void;
 }
 
-const STATUS_CONFIG: Record<string, { variant: any; label: string }> = {
-  "Pending":          { variant: "warning",   label: "Menunggu" },
-  "Paid":             { variant: "primary",   label: "Dibayar" },
-  "Confirmed":        { variant: "primary",   label: "Dikonfirmasi" },
-  "Preparing":        { variant: "warning",   label: "Disiapkan" },
-  "Ready":            { variant: "success",   label: "Siap" },
-  "Out for Delivery": { variant: "primary",   label: "Diantar" },
-  "Completed":        { variant: "success",   label: "Selesai" },
-  "Cancelled":        { variant: "danger",    label: "Batal" },
-};
+export function OrderCard({ order }: OrderCardProps) {
+  const navigate = useNavigate();
+  const { slug } = useParams();
 
-export const OrderCard: React.FC<OrderCardProps> = ({ order, onClick }) => {
-  const config = STATUS_CONFIG[order.status] || { variant: "ghost", label: order.status };
+  const isTerminal = ['Completed', 'Cancelled'].includes(order.status);
+  const isActive = !isTerminal;
+
+  // Build item summary
+  const itemSummary = order.items?.slice(0, 2).map(i => `${i.qty}x ${i.productName}`).join(', ') || '';
+  const remainingItems = (order.items?.length || 0) - 2;
 
   return (
-    <div 
-      onClick={onClick}
-      className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm active:scale-[0.98] transition-transform flex flex-col gap-4 cursor-pointer"
-    >
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl ${order.fulfillmentType === 'delivery' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'}`}>
-            {order.fulfillmentType === 'delivery' ? <Truck size={20} /> : <Store size={20} />}
-          </div>
-          <div>
-            <p className="text-xs font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{order.orderNumber}</p>
-            <p className="text-[10px] font-bold text-gray-400">{formatDate(order.createdAt)}</p>
-          </div>
-        </div>
-        <Badge variant={config.variant}>{config.label}</Badge>
+    <div className="card p-4 mb-3 active:shadow-card-hover transition-shadow" id={`order-card-${order.id}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <StatusBadge status={order.status} />
+        <span className="text-xs text-gray-400">
+          #{order.orderNumber} • {formatTime(order.createdAt)}
+        </span>
       </div>
 
-      <div className="flex justify-between items-end">
-        <div>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Pembayaran</p>
-          <p className="text-lg font-black text-gray-900 tracking-tight">{formatRupiah(order.total)}</p>
-        </div>
-        <div className="flex items-center gap-1 text-primary font-bold text-sm">
-          Detail <ChevronRight size={16} strokeWidth={3} />
-        </div>
+      {/* Items */}
+      <p className="text-sm text-gray-600 line-clamp-1">{itemSummary}</p>
+      {remainingItems > 0 && (
+        <p className="text-xs text-gray-400 mt-0.5">+{remainingItems} item lainnya</p>
+      )}
+
+      {/* Total */}
+      <p className="text-sm font-bold text-secondary mt-3">
+        Total: {formatRupiah(order.total)}
+      </p>
+
+      {/* Actions */}
+      <div className="flex gap-2 mt-3">
+        {isActive && (
+          <button
+            onClick={() => navigate(`/${slug}/orders/${order.id}`)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold active:scale-95 transition-transform"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Lacak Pesanan
+          </button>
+        )}
+
+        {order.status === 'Completed' && (
+          <>
+            <button
+              onClick={() => navigate(`/${slug}`)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold active:scale-95 transition-transform"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Pesan Lagi
+            </button>
+            <button className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-star/10 text-star text-xs font-semibold active:scale-95 transition-transform">
+              <Star className="w-3.5 h-3.5" />
+              Rating
+            </button>
+          </>
+        )}
+
+        {!isActive && (
+          <button className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-emerald-50 text-emerald-600 text-xs font-semibold active:scale-95 transition-transform">
+            <MessageCircle className="w-3.5 h-3.5" />
+            Chat
+          </button>
+        )}
       </div>
     </div>
   );
-};
+}

@@ -1,6 +1,6 @@
 import { request } from "./api";
-import { StoreInfo } from "../types/store";
-import { MenuItem, Category } from "../types/product";
+import { StoreInfo } from "@/types/store";
+import { MenuItem, Category } from "@/types/product";
 
 export async function getStore(slug: string): Promise<StoreInfo> {
   return request<StoreInfo>(`/api/online/${slug}`);

@@ -1,67 +1,95 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useCustomer } from '../../hooks/useCustomer';
-import { getCustomerOrders } from '../../services/customer.api';
-import { OnlineOrder } from '../../types/order';
+import { useState, useEffect, useMemo } from 'react';
+import { Header } from '@/components/layout/Header';
 import { OrderCard } from './OrderCard';
-import { ChevronLeft, ClipboardList, Search } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { FullPageSpinner } from '@/components/ui/Spinner';
+import { getCustomerOrders } from '@/services/customer.api';
+import { OnlineOrder } from '@/types/order';
+import { getItem } from '@/utils/storage';
+import { ClipboardList } from 'lucide-react';
 
-export const OrderListPage: React.FC = () => {
-  const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
-  const { customer, isLoading: customerLoading } = useCustomer();
+type Tab = 'active' | 'completed' | 'cancelled';
+
+export function OrderListPage() {
   const [orders, setOrders] = useState<OnlineOrder[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<Tab>('active');
+
+  const customerId = getItem<string>('warung_bujo_customer', '');
 
   useEffect(() => {
-    if (customer) {
-      setIsLoading(true);
-      getCustomerOrders(customer.id)
-        .then(setOrders)
-        .finally(() => setIsLoading(false));
-    } else if (!customerLoading) {
-      setIsLoading(false);
+    if (!customerId) {
+      setLoading(false);
+      return;
     }
-  }, [customer, customerLoading]);
+    getCustomerOrders(customerId)
+      .then(setOrders)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [customerId]);
 
-  if (customerLoading || isLoading) {
-    return <div className="p-8 text-center text-gray-500 font-bold animate-pulse">Memuat riwayat pesanan...</div>;
-  }
+  const filteredOrders = useMemo(() => {
+    switch (activeTab) {
+      case 'active':
+        return orders.filter(o => !['Completed', 'Cancelled'].includes(o.status));
+      case 'completed':
+        return orders.filter(o => o.status === 'Completed');
+      case 'cancelled':
+        return orders.filter(o => o.status === 'Cancelled');
+    }
+  }, [orders, activeTab]);
 
-  if (!customer) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] px-8 text-center">
-        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6 text-gray-300">
-          <Search size={40} />
-        </div>
-        <h2 className="text-2xl font-black text-gray-900 mb-2">Belum Ada Riwayat</h2>
-        <p className="text-gray-500 mb-8 leading-relaxed">Silakan lakukan pesanan pertama Anda atau masukkan nomor HP di halaman checkout.</p>
-        <Button onClick={() => navigate(`/${slug}`)} className="w-full">
-          Mulai Pesan
-        </Button>
-      </div>
-    );
-  }
+  const activeCount = orders.filter(o => !['Completed', 'Cancelled'].includes(o.status)).length;
+
+  if (loading) return <FullPageSpinner />;
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="px-4 py-5 flex items-center gap-4 sticky top-0 bg-white z-10 border-b border-gray-100">
-        <button onClick={() => navigate(`/${slug}`)} className="p-2 -ml-2 text-gray-900">
-          <ChevronLeft size={24} strokeWidth={3} />
-        </button>
-        <h2 className="text-xl font-black tracking-tight">Pesanan Saya</h2>
+    <div id="order-list-page">
+      <Header title="Pesanan Saya" showBack showCart={false} showSearch={false} />
+
+      {/* Tabs */}
+      <div className="sticky top-[60px] z-20 bg-white border-b border-gray-100">
+        <div className="flex">
+          {([
+            { key: 'active' as Tab, label: 'Aktif', count: activeCount },
+            { key: 'completed' as Tab, label: 'Selesai' },
+            { key: 'cancelled' as Tab, label: 'Batal' },
+          ]).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`
+                flex-1 py-3 text-sm font-semibold transition-all relative
+                ${activeTab === tab.key
+                  ? 'text-primary'
+                  : 'text-gray-400'
+                }
+              `}
+            >
+              {tab.label}
+              {tab.count ? ` (${tab.count})` : ''}
+              {activeTab === tab.key && (
+                <span className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="p-4 flex flex-col gap-4">
-        {orders.length === 0 ? (
-          <div className="py-20 text-center text-gray-500 font-medium">Belum ada pesanan terdaftar.</div>
+      {/* Orders */}
+      <div className="px-4 mt-4 pb-8">
+        {filteredOrders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center min-h-[30vh] text-center">
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+              <ClipboardList className="w-8 h-8 text-gray-300" />
+            </div>
+            <p className="text-gray-400 font-medium text-sm">Belum ada pesanan</p>
+          </div>
         ) : (
-          orders.map((order) => (
-            <OrderCard key={order.id} order={order} onClick={() => navigate(`/${slug}/orders/${order.id}`)} />
+          filteredOrders.map(order => (
+            <OrderCard key={order.id} order={order} />
           ))
         )}
       </div>
     </div>
   );
-};
+}

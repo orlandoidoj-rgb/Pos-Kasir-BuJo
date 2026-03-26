@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
-import { Truck, Phone } from 'lucide-react'
+import { Truck, Phone, AlertCircle } from 'lucide-react'
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('')
@@ -11,6 +11,10 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!phone.trim()) {
+      setError('Nomor HP wajib diisi')
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -49,7 +53,7 @@ export default function LoginPage() {
                 autoFocus
                 required
                 value={phone}
-                onChange={e => setPhone(e.target.value)}
+                onChange={e => { setPhone(e.target.value); setError(''); }}
                 placeholder="08xxx / 628xxx"
                 className="w-full h-14 pl-12 pr-4 bg-gray-50 rounded-2xl text-base font-bold focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all"
               />
@@ -57,8 +61,16 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-sm text-red-600 font-bold text-center">
-              {error}
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-start gap-3">
+              <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-red-600 font-bold">{error}</p>
+                {error.toLowerCase().includes('tidak ditemukan') && (
+                  <p className="text-xs text-red-400 mt-1">
+                    Nomor HP kamu belum terdaftar sebagai driver. Hubungi Admin Warung BuJo untuk didaftarkan terlebih dahulu.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -70,9 +82,11 @@ export default function LoginPage() {
             {loading ? 'Masuk...' : 'Masuk'}
           </button>
 
-          <p className="text-center text-xs text-gray-400 font-medium leading-relaxed">
-            Belum terdaftar? Hubungi admin Warung BuJo untuk mendaftarkan akun driver kamu.
-          </p>
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+            <p className="text-center text-xs text-amber-700 font-medium leading-relaxed">
+              ⚠️ Driver tidak bisa mendaftar mandiri. Akun driver harus didaftarkan oleh Admin melalui Backoffice.
+            </p>
+          </div>
         </form>
       </div>
     </div>

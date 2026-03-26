@@ -6,3 +6,4 @@ export * from "./inventory.schema";
 export * from "./procurement.schema";
 export * from "./accounting.schema";
 export * from "./online.schema";
+export * from "./promo.schema";

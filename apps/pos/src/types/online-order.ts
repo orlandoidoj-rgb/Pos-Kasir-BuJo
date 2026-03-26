@@ -59,9 +59,12 @@ export interface StatusConfig {
 
 export const ONLINE_STATUS_CONFIG: Record<OnlineOrderStatus, StatusConfig> = {
   "Pending": {
-    color: "bg-gray-100", textColor: "text-gray-500",
-    label: "Menunggu Pembayaran", icon: "⏳",
-    actions: [],
+    color: "bg-blue-100", textColor: "text-blue-700",
+    label: "Pesanan Baru — Perlu Konfirmasi", icon: "🔵",
+    actions: [
+      { label: "Terima Pesanan", icon: "✅", action: "confirm", variant: "primary" },
+      { label: "Tolak", icon: "❌", action: "cancel", variant: "danger" },
+    ],
   },
   "Paid": {
     color: "bg-blue-100", textColor: "text-blue-700",

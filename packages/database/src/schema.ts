@@ -8,6 +8,8 @@ import {
   timestamp,
   pgEnum,
   integer,
+  index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -15,7 +17,7 @@ import { relations } from "drizzle-orm";
 // Enums
 // -----------------------------------------------------------------------------
 
-export const userRoleEnum = pgEnum("user_role", ["master", "admin", "cashier"]);
+export const userRoleEnum = pgEnum("user_role", ["master", "admin", "cashier", "customer", "driver"]);
 
 export const orderTypeEnum = pgEnum("order_type", [
   "Dine-in",
@@ -84,11 +86,20 @@ export const branches = pgTable("branches", {
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  email: varchar("email", { length: 255 }).notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
   role: userRoleEnum("role").notNull(),
+  phoneNumber: varchar("phone_number", { length: 20 }),
+  email: varchar("email", { length: 255 }),
+  passwordHash: text("password_hash"),
+  googleId: varchar("google_id", { length: 255 }),
+  fullName: varchar("full_name", { length: 255 }).notNull().default(""),
+  points: integer("points").default(0).notNull(),
   branchId: uuid("branch_id").references(() => branches.id),
-});
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  phoneIdx: uniqueIndex("idx_users_phone").on(table.phoneNumber),
+  emailIdx: uniqueIndex("idx_users_email").on(table.email),
+  googleIdx: uniqueIndex("idx_users_google_id").on(table.googleId),
+}));
 
 // -----------------------------------------------------------------------------
 // CRM
@@ -165,6 +176,37 @@ export const vouchers = pgTable("vouchers", {
   quota: integer("quota").notNull().default(0),
   validUntil: timestamp("valid_until"),
 });
+
+// ─── Promos & Vouchers (IAM/CRM) ─────────────────────────────────────────────
+
+export const promosVouchers = pgTable("promos_vouchers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  discountType: varchar("discount_type", { length: 20 }).notNull(),
+  value: numeric("value", { precision: 12, scale: 2 }).notNull(),
+  minOrder: numeric("min_order", { precision: 12, scale: 2 }).default("0"),
+  maxDiscount: numeric("max_discount", { precision: 12, scale: 2 }).default("0"),
+  usageLimit: integer("usage_limit").default(0).notNull(),
+  usageCount: integer("usage_count").default(0).notNull(),
+  validFrom: timestamp("valid_from"),
+  validUntil: timestamp("valid_until"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const userVouchers = pgTable("user_vouchers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  promoVoucherId: uuid("promo_voucher_id").references(() => promosVouchers.id).notNull(),
+  isUsed: boolean("is_used").default(false).notNull(),
+  usedAt: timestamp("used_at"),
+  claimedAt: timestamp("claimed_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("idx_user_vouchers_user").on(table.userId),
+  promoIdx: index("idx_user_vouchers_promo").on(table.promoVoucherId),
+}));
 
 // -----------------------------------------------------------------------------
 // Inventory
@@ -277,6 +319,7 @@ export const branchRelations = relations(branches, ({ many }) => ({
 export const userRelations = relations(users, ({ one, many }) => ({
   branch: one(branches, { fields: [users.branchId], references: [branches.id] }),
   posOrders: many(posOrders),
+  userVouchers: many(userVouchers),
 }));
 
 export const partnerRelations = relations(partners, ({ many }) => ({
@@ -359,4 +402,15 @@ export const journalEntryRelations = relations(journalEntries, ({ many }) => ({
 export const journalItemRelations = relations(journalItems, ({ one }) => ({
   entry: one(journalEntries, { fields: [journalItems.journalEntryId], references: [journalEntries.id] }),
   account: one(accounts, { fields: [journalItems.accountId], references: [accounts.id] }),
+}));
+
+// ─── Promo & Voucher Relations ───────────────────────────────────────────────
+
+export const promosVouchersRelations = relations(promosVouchers, ({ many }) => ({
+  userVouchers: many(userVouchers),
+}));
+
+export const userVouchersRelations = relations(userVouchers, ({ one }) => ({
+  user: one(users, { fields: [userVouchers.userId], references: [users.id] }),
+  promoVoucher: one(promosVouchers, { fields: [userVouchers.promoVoucherId], references: [promosVouchers.id] }),
 }));

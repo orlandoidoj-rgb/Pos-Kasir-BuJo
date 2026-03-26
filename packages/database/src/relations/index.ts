@@ -6,3 +6,4 @@ export * from "./inventory.relations";
 export * from "./procurement.relations";
 export * from "./accounting.relations";
 export * from "./online.relations";
+export * from "./promo.relations";

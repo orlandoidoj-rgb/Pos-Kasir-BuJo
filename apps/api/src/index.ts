@@ -10,6 +10,9 @@ import onlineAdminRoutes from './routes/online-admin.routes';
 import onlineWebhookRoutes from './routes/online-webhook.routes';
 import onlineAuthRoutes from './routes/online-auth.routes';
 import driverRoutes from './routes/driver.routes';
+import authRoutes from './routes/auth.routes';
+import adminUsersRoutes from './routes/admin-users.routes';
+import customerSyncRoutes from './routes/customer-sync.routes';
 import { sendSuccess } from './utils/response';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -35,6 +38,9 @@ app.use('/api/online/customer', onlineCustomerRoutes);
 app.use('/api/admin/online', onlineAdminRoutes);
 app.use('/api/webhooks', onlineWebhookRoutes);
 app.use('/api/driver', driverRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/admin/users', adminUsersRoutes);
+app.use('/api/customer', customerSyncRoutes);
 
 // ─── Global Error Handler ────────────────────────────────────────────────────
 app.use(errorHandler);

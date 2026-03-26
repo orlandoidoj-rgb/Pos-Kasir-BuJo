@@ -1,30 +1,62 @@
-import React from 'react';
-import { ShoppingBag } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/Button';
+import { MapPin, Utensils, ChevronRight } from 'lucide-react';
+import { ProductList } from '@/components/menu/ProductList';
+import { ProductDetail } from '@/components/menu/ProductDetail';
+import { BottomCartBar } from '@/components/layout/BottomCartBar';
+import { WhatsAppFab } from '@/components/ui/WhatsAppFab';
+import { FullPageSpinner } from '@/components/ui/Spinner';
+import { MenuItem } from '@/types/product';
 
-export const LandingPage: React.FC = () => {
+export function LandingPage() {
+  const navigate = useNavigate();
+
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 max-w-md mx-auto">
-      <div className="w-24 h-24 bg-primary rounded-[32px] flex items-center justify-center text-white mb-8 shadow-2xl shadow-primary/20">
-        <ShoppingBag size={48} strokeWidth={2.5} />
-      </div>
-      
-      <h1 className="text-4xl font-black text-gray-900 text-center mb-4 tracking-tight">Warung BuJo <br/><span className="text-primary italic">Online Store</span></h1>
-      <p className="text-gray-500 text-center mb-12 leading-relaxed">Nikmati menu spesial kami langsung dari genggaman Anda. Tanpa komisi platform, harga lebih hemat!</p>
+    <div
+      className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center px-6 text-center relative overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, #F97316 0%, #EA580C 50%, #C2410C 100%)',
+      }}
+      id="landing-page"
+    >
+      {/* Decorative circles */}
+      <div className="absolute -top-20 -left-20 w-60 h-60 bg-white/5 rounded-full" />
+      <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-white/5 rounded-full" />
+      <div className="absolute top-1/3 right-4 w-24 h-24 bg-white/5 rounded-full" />
 
-      <div className="w-full space-y-4">
-        <Link to="/malang-pusat" className="block">
-          <button className="w-full bg-gray-50 hover:bg-gray-100 p-6 rounded-3xl border border-gray-100 flex items-center justify-between transition-all active:scale-95 group">
-            <div className="text-left">
-              <p className="font-black text-gray-900 group-hover:text-primary transition-colors">Cabang Pusat</p>
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Jl. Borobudur No. 22</p>
-            </div>
-            <div className="bg-success/10 text-success text-[10px] font-black px-2 py-1 rounded-full">BUKA</div>
-          </button>
-        </Link>
-      </div>
+      <div className="relative z-10 max-w-sm">
+        {/* Logo */}
+        <div className="w-24 h-24 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-6 shadow-xl">
+          <Utensils className="w-12 h-12 text-white" />
+        </div>
 
-      <p className="mt-20 text-[10px] text-gray-300 font-bold uppercase tracking-[0.2em]">Powered by BuJo POS System</p>
+        <h1 className="text-4xl font-extrabold text-white tracking-tight mb-2">
+          WARUNG BUJO
+        </h1>
+        <p className="text-white/70 text-base font-medium mb-8">
+          Pesan makanan favoritmu dengan mudah
+        </p>
+
+        {/* CTA */}
+        <Button
+          variant="secondary"
+          size="lg"
+          fullWidth
+          onClick={() => navigate('/malang-pusat')}
+          className="!bg-white !text-primary !border-0 !shadow-xl"
+          id="start-btn"
+        >
+          <span className="flex items-center gap-2">
+            <MapPin className="w-5 h-5" />
+            Mulai Pesan
+            <ChevronRight className="w-5 h-5" />
+          </span>
+        </Button>
+
+        <p className="text-white/50 text-xs mt-6">
+          © 2026 Warung BuJo. Semua hak dilindungi.
+        </p>
+      </div>
     </div>
   );
-};
+}

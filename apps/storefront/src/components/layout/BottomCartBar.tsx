@@ -1,40 +1,46 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ShoppingBag, ChevronRight } from 'lucide-react';
-import { formatRupiah } from '../../utils/format';
-import { motion } from 'framer-motion';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ShoppingCart, ChevronRight } from 'lucide-react';
+import { formatRupiah } from '@/utils/format';
 
 interface BottomCartBarProps {
   itemCount: number;
-  total: number;
-  slug: string;
+  subtotal: number;
 }
 
-export const BottomCartBar: React.FC<BottomCartBarProps> = ({ itemCount, total, slug }) => {
+export function BottomCartBar({ itemCount, subtotal }: BottomCartBarProps) {
+  const navigate = useNavigate();
+  const { slug } = useParams();
+
+  if (itemCount === 0) return null;
+
   return (
-    <motion.div 
-      initial={{ y: 100 }}
-      animate={{ y: 0 }}
-      className="fixed bottom-0 left-0 right-0 p-4 z-50 max-w-md mx-auto"
-    >
-      <Link 
-        to={`/${slug}/cart`}
-        className="bg-primary text-white p-4 rounded-2xl flex items-center justify-between shadow-2xl shadow-primary/30 active:scale-[0.98] transition-all"
-      >
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <ShoppingBag size={24} />
-            <span className="absolute -top-2 -right-2 bg-white text-primary text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-primary">
-              {itemCount}
+    <div className="fixed bottom-0 left-0 right-0 z-40 animate-slide-up" id="bottom-cart-bar">
+      <div className="max-w-lg mx-auto">
+        <button
+          onClick={() => navigate(`/${slug}/cart`)}
+          className="w-full flex items-center justify-between px-5 py-4 text-white font-semibold"
+          style={{
+            background: 'linear-gradient(135deg, #F97316, #EA580C)',
+            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <ShoppingCart className="w-6 h-6" />
+              <span className="absolute -top-2 -right-2 w-5 h-5 bg-white text-primary text-[10px] font-bold rounded-full flex items-center justify-center">
+                {itemCount}
+              </span>
+            </div>
+            <span className="text-sm">
+              Keranjang • {itemCount} item
             </span>
           </div>
-          <div>
-            <p className="text-xs opacity-80 font-medium">Lihat Keranjang</p>
-            <p className="font-bold text-lg leading-tight">{formatRupiah(total)}</p>
+          <div className="flex items-center gap-2">
+            <span className="text-base font-bold">{formatRupiah(subtotal)}</span>
+            <ChevronRight className="w-5 h-5" />
           </div>
-        </div>
-        <ChevronRight size={24} />
-      </Link>
-    </motion.div>
+        </button>
+      </div>
+    </div>
   );
-};
+}

@@ -1,21 +1,15 @@
-export function generateWhatsAppLink(
-  phone: string,
-  message?: string
-): string {
-  const cleanPhone = phone.replace(/\D/g, "");
-  let finalPhone = cleanPhone;
-  if (finalPhone.startsWith("0")) {
-    finalPhone = "62" + finalPhone.slice(1);
-  }
-
-  const baseUrl = "https://wa.me/";
-  const url = new URL(`${baseUrl}${finalPhone}`);
-  if (message) {
-    url.searchParams.set("text", message);
-  }
-  return url.toString();
+export function generateWhatsAppLink(phone: string, message?: string): string {
+  const cleaned = phone.replace(/\D/g, '');
+  // Convert 08xx to 628xx
+  const intl = cleaned.startsWith('0') ? '62' + cleaned.slice(1) : cleaned;
+  const url = `https://wa.me/${intl}`;
+  return message ? `${url}?text=${encodeURIComponent(message)}` : url;
 }
 
-export const getOrderWhatsAppMessage = (orderNumber: string) => {
-  return `Halo Warung BuJo, saya ingin bertanya tentang pesanan saya dengan nomor ${orderNumber}.`;
-};
+export function generateOrderWhatsAppMessage(orderNumber: string, storeName: string): string {
+  return `Halo ${storeName}, saya ingin bertanya tentang pesanan saya #${orderNumber}`;
+}
+
+export function generateDriverWhatsAppMessage(orderNumber: string): string {
+  return `Halo, saya pemesan #${orderNumber}. Posisi pengiriman saat ini di mana ya?`;
+}

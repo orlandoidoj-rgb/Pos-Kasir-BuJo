@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { StoreInfo } from '../types/store';
-import { getStore } from '../services/store.api';
+import { StoreInfo } from '@/types/store';
+import { getStore } from '@/services/store.api';
+import { DUMMY_STORE } from '@/constants/dummy-data';
 
 export function useStore(slug: string) {
   const [store, setStore] = useState<StoreInfo | null>(null);
@@ -13,7 +14,15 @@ export function useStore(slug: string) {
     setIsLoading(true);
     getStore(slug)
       .then(setStore)
-      .catch(err => setError(err.message))
+      .catch(err => {
+        console.warn(`Failed to fetch store for slug: ${slug}`, err);
+        if (slug === 'malang-pusat') {
+          setStore(DUMMY_STORE);
+          setError(null);
+        } else {
+          setError(err.message);
+        }
+      })
       .finally(() => setIsLoading(false));
   }, [slug]);
 

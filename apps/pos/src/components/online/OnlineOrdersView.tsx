@@ -45,7 +45,7 @@ export default function OnlineOrdersView({
   const filteredOrders = useMemo(() => {
     switch (activeTab) {
       case 'new':
-        return orders.filter(o => o.status === 'Paid');
+        return orders.filter(o => ['Paid', 'Pending'].includes(o.status));
       case 'processing':
         return orders.filter(o => ['Confirmed', 'Preparing'].includes(o.status));
       case 'ready':
@@ -56,7 +56,7 @@ export default function OnlineOrdersView({
   }, [orders, activeTab]);
 
   const stats = {
-    new: orders.filter(o => o.status === 'Paid').length,
+    new: orders.filter(o => ['Paid', 'Pending'].includes(o.status)).length,
     processing: orders.filter(o => ['Confirmed', 'Preparing'].includes(o.status)).length,
     ready: orders.filter(o => ['Ready', 'Out for Delivery'].includes(o.status)).length,
   };

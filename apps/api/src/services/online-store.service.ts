@@ -180,7 +180,7 @@ export async function createOnlineOrder(db: any, branchId: string, slug: string,
         orderNumber,
         branchId,
         customerId,
-        status: "Pending",
+        status: "Pending", // Default is Pending
         fulfillmentType: input.fulfillmentType,
         pickupScheduledAt: input.pickupScheduledAt ? new Date(input.pickupScheduledAt) : null,
         deliveryAddress: input.deliveryAddress,
@@ -191,6 +191,8 @@ export async function createOnlineOrder(db: any, branchId: string, slug: string,
         subtotal: subtotal.toString(),
         total: total.toString(),
         customerNotes: input.customerNotes,
+        paymentMethod: "CASH/COD",
+        paymentStatus: "unpaid",
       })
       .returning();
 
@@ -202,45 +204,19 @@ export async function createOnlineOrder(db: any, branchId: string, slug: string,
       }))
     );
 
-    // ------------------------------------------------------------------------
-    // FASE 6: MIDTRANS SNAP TOKEN (New)
-    // ------------------------------------------------------------------------
-    const snapResult = await createSnapToken(
-      {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        total: Number(order.total),
-        items: orderLinesBatch.map(l => ({
-          productId: l.productId,
-          name: l.productName,
-          qty: l.qty,
-          price: Number(l.price),
-        })),
-      },
-      {
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone,
-      },
-      slug
-    );
-
-    // Update order with midtrans info
-    await tx
-      .update(onlineOrders)
-      .set({
-        midtransOrderId: order.orderNumber,
-        paymentMethod: "midtrans_snap",
-      })
-      .where(eq(onlineOrders.id, order.id));
+    /* 
+    DEPRECATED: Midtrans Snap Flow (By-passed for direct Cash/COD)
+    const snapResult = await createSnapToken(...)
+    await tx.update(onlineOrders).set({ midtransOrderId: order.orderNumber, paymentMethod: "midtrans_snap" }).where(eq(onlineOrders.id, order.id));
+    */
 
     return {
       orderId: order.id,
       orderNumber: order.orderNumber,
       total: order.total,
       customerId: customer.id,
-      snapToken: snapResult.token,
-      paymentUrl: snapResult.redirectUrl,
+      // snapToken: snapResult.token,
+      // paymentUrl: snapResult.redirectUrl,
     };
   });
 }

@@ -1,44 +1,45 @@
-import React from 'react';
-import { formatRupiah } from '../../utils/format';
+import { Card } from '@/components/ui/Card';
+import { formatRupiah } from '@/utils/format';
 
 interface CartSummaryProps {
+  itemCount: number;
   subtotal: number;
-  discount?: number;
   deliveryFee?: number;
+  discount?: number;
 }
 
-export const CartSummary: React.FC<CartSummaryProps> = ({ 
-  subtotal, 
-  discount = 0, 
-  deliveryFee = 0 
-}) => {
-  const total = subtotal - discount + deliveryFee;
+export function CartSummary({ itemCount, subtotal, deliveryFee, discount = 0 }: CartSummaryProps) {
+  const total = subtotal - discount + (deliveryFee || 0);
 
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between text-sm text-gray-500 font-medium">
-        <span>Subtotal</span>
-        <span>{formatRupiah(subtotal)}</span>
-      </div>
+    <Card className="space-y-3" id="cart-summary">
+      <h3 className="text-sm font-bold text-secondary mb-3">Ringkasan Belanja</h3>
       
-      {discount > 0 && (
-        <div className="flex justify-between text-sm text-success font-bold">
-          <span>Diskon</span>
-          <span>-{formatRupiah(discount)}</span>
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">Subtotal ({itemCount} menu)</span>
+          <span className="text-secondary font-medium">{formatRupiah(subtotal)}</span>
         </div>
-      )}
-
-      {deliveryFee > 0 && (
-        <div className="flex justify-between text-sm text-gray-500 font-medium">
-          <span>Ongkir</span>
-          <span>{formatRupiah(deliveryFee)}</span>
-        </div>
-      )}
-
-      <div className="flex justify-between items-center pt-3 border-t border-gray-200 mt-2">
-        <span className="text-base font-black text-gray-900 uppercase tracking-tight">Total</span>
-        <span className="text-2xl font-black text-primary">{formatRupiah(total)}</span>
+        
+        {deliveryFee !== undefined && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Ongkos Kirim</span>
+            <span className="text-secondary font-medium">{formatRupiah(deliveryFee)}</span>
+          </div>
+        )}
+        
+        {discount > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Diskon</span>
+            <span className="text-green-500 font-medium">-{formatRupiah(discount)}</span>
+          </div>
+        )}
       </div>
-    </div>
+
+      <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
+        <span className="text-secondary font-bold text-base">Total Pembayaran</span>
+        <span className="text-primary font-extrabold text-xl">{formatRupiah(total)}</span>
+      </div>
+    </Card>
   );
-};
+}

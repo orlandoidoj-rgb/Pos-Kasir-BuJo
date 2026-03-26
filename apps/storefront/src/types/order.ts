@@ -42,6 +42,7 @@ export interface CheckoutInput {
   deliveryNotes?: string;
   pickupScheduledAt?: string;
   customerNotes?: string;
+  source?: string;
   lines: {
     productId: string;
     qty: number;

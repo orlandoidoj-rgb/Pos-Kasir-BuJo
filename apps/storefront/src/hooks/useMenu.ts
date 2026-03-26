@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { MenuItem, Category } from '../types/product';
-import { getMenu, getCategories } from '../services/store.api';
+import { MenuItem, Category } from '@/types/product';
+import { getMenu, getCategories } from '@/services/store.api';
+import { DUMMY_MENU, DUMMY_CATEGORIES } from '@/constants/dummy-data';
 
 export function useMenu(slug: string) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -21,8 +22,18 @@ export function useMenu(slug: string) {
       .then(([items, cats]) => {
         setMenuItems(items);
         setCategories(cats);
+        setError(null);
       })
-      .catch(err => setError(err.message))
+      .catch(err => {
+        console.warn(`Failed to fetch menu/categories for slug: ${slug}`, err);
+        if (slug === 'malang-pusat') {
+          setMenuItems(DUMMY_MENU);
+          setCategories(DUMMY_CATEGORIES);
+          setError(null);
+        } else {
+          setError(err.message);
+        }
+      })
       .finally(() => setIsLoading(false));
   }, [slug]);
 

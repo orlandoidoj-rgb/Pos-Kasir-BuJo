@@ -1,29 +1,46 @@
-export const formatRupiah = (value: number | string) => {
-  const number = typeof value === 'string' ? parseFloat(value) : value;
+export function formatRupiah(amount: number | string): string {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(num)) return 'Rp 0';
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(number);
-};
+  }).format(num).replace('IDR', 'Rp').trim();
+}
 
-export const formatPhone = (phone: string) => {
-  // 628123456789 -> 0812-3456-789
-  let clean = phone.replace(/\D/g, "");
-  if (clean.startsWith("62")) {
-    clean = "0" + clean.slice(2);
-  }
-  return clean.replace(/(\d{4})(\d{4})(\d+)/, "$1-$2-$3");
-};
+export function formatCompactRupiah(amount: number | string): string {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(num)) return 'Rp 0';
+  if (num >= 1000000) return `Rp ${(num / 1000000).toFixed(1)}jt`;
+  if (num >= 1000) return `Rp ${Math.round(num / 1000)}rb`;
+  return `Rp ${num}`;
+}
 
-export const formatDate = (date: string | Date) => {
-  const d = typeof date === 'string' ? new Date(date) : date;
+export function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
   return new Intl.DateTimeFormat('id-ID', {
     day: 'numeric',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(d);
-};
+    timeZone: 'Asia/Jakarta',
+  }).format(date) + ' WIB';
+}
+
+export function formatTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  return new Intl.DateTimeFormat('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Jakarta',
+  }).format(date);
+}
+
+export function formatPhone(phone: string): string {
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length <= 4) return cleaned;
+  if (cleaned.length <= 8) return `${cleaned.slice(0, 4)}-${cleaned.slice(4)}`;
+  return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}-${cleaned.slice(8)}`;
+}
