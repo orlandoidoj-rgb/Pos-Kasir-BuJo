@@ -1,5 +1,5 @@
 import { inArray } from "drizzle-orm";
-import { accounts, journalEntries, journalItems } from "@warung-bujo/database/src/schema/accounting.schema";
+import { accounts, journalEntries, journalItems } from "@warung-bujo/database";
 
 export interface JournalLine {
   accountCode: string;

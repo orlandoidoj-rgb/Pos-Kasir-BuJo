@@ -15,3 +15,9 @@ export const onlineFulfillmentEnum = pgEnum("online_fulfillment_type", [
   "pickup",           // Ambil sendiri
   "delivery",         // Diantar
 ]);
+
+export const driverStatusEnum = pgEnum("driver_status", [
+  "available",  // Siap terima orderan
+  "busy",       // Sedang antar pesanan
+  "offline",    // Tidak aktif
+]);

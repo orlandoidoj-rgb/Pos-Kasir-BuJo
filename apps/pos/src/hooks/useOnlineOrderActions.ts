@@ -50,15 +50,15 @@ export function useOnlineOrderActions(refresh: () => void) {
 
         case 'assign_driver':
           if (payload?.driverName && payload?.driverPhone) {
-            await onlineApi.assignDriver(order.id, payload.driverName, payload.driverPhone);
-            
+            await onlineApi.assignDriver(order.id, payload.driverName, payload.driverPhone, payload.driverId);
+
             // Open WA to driver
             const itemsSummary = order.items.map(i => `- ${i.qty}x ${i.productName}`).join('\n');
             const waMsg = getDriverWhatsAppMessage(
-              order.orderNumber, 
-              order.customerName, 
-              order.deliveryAddress || '-', 
-              itemsSummary, 
+              order.orderNumber,
+              order.customerName,
+              order.deliveryAddress || '-',
+              itemsSummary,
               fmt(order.total)
             );
             window.open(generateWhatsAppLink(payload.driverPhone, waMsg));

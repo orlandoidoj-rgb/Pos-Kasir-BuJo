@@ -161,11 +161,12 @@ export default function OnlineOrdersView({
       </div>
 
       {modalType === 'assign_driver' && selectedOrder && (
-        <AssignDriverModal 
+        <AssignDriverModal
           order={selectedOrder}
+          branchId={selectedOrder.branchId || orders[0]?.branchId || ''}
           onClose={() => setModalType(null)}
-          onConfirm={(name, phone) => {
-            handleAction(selectedOrder, 'assign_driver', { driverName: name, driverPhone: phone });
+          onConfirm={(name, phone, driverId) => {
+            handleAction(selectedOrder, 'assign_driver', { driverName: name, driverPhone: phone, driverId });
             setModalType(null);
           }}
         />

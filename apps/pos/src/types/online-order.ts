@@ -11,6 +11,7 @@ export type OnlineOrderStatus =
 export interface OnlineOrder {
   id: string;
   orderNumber: string;
+  branchId?: string;
   status: OnlineOrderStatus;
   paymentStatus: string;
   fulfillmentType: "pickup" | "delivery";

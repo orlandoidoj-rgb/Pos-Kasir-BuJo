@@ -13,7 +13,7 @@ export const LandingPage: React.FC = () => {
       <p className="text-gray-500 text-center mb-12 leading-relaxed">Nikmati menu spesial kami langsung dari genggaman Anda. Tanpa komisi platform, harga lebih hemat!</p>
 
       <div className="w-full space-y-4">
-        <Link to="/pusat" className="block">
+        <Link to="/malang-pusat" className="block">
           <button className="w-full bg-gray-50 hover:bg-gray-100 p-6 rounded-3xl border border-gray-100 flex items-center justify-between transition-all active:scale-95 group">
             <div className="text-left">
               <p className="font-black text-gray-900 group-hover:text-primary transition-colors">Cabang Pusat</p>

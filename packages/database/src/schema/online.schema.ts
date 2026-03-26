@@ -2,7 +2,7 @@ import { pgTable, uuid, varchar, boolean, text, jsonb, numeric, integer, timesta
 import { branches } from "./auth.schema";
 import { products } from "./catalog.schema";
 import { posOrders, vouchers } from "./pos.schema";
-import { onlineOrderStatusEnum, onlineFulfillmentEnum } from "../enums/online.enums";
+import { onlineOrderStatusEnum, onlineFulfillmentEnum, driverStatusEnum } from "../enums/online.enums";
 
 export const onlineStoreConfig = pgTable("online_store_config", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -25,11 +25,29 @@ export const onlineStoreConfig = pgTable("online_store_config", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const drivers = pgTable("drivers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  status: driverStatusEnum("status").notNull().default("offline"),
+  currentOrderId: uuid("current_order_id"),
+  branchId: uuid("branch_id").references(() => branches.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  phoneIdx: uniqueIndex("idx_drivers_phone").on(table.phone),
+  branchStatusIdx: index("idx_drivers_branch_status").on(table.branchId, table.status),
+}));
+
 export const onlineCustomers = pgTable("online_customers", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }).notNull(),
   phone: varchar("phone", { length: 20 }).notNull(), // Format: 628xxxxx, UNIQUE identifier
   email: varchar("email", { length: 255 }).notNull(), // WAJIB — Untuk Midtrans invoice
+
+  // Google Auth
+  googleId: varchar("google_id", { length: 255 }),
+  avatarUrl: text("avatar_url"),
 
   // Alamat delivery (diisi saat checkout, bukan saat register)
   address: text("address"),
@@ -65,6 +83,7 @@ export const onlineOrders = pgTable("online_orders", {
   deliveryLongitude: numeric("delivery_longitude", { precision: 10, scale: 7 }),
   deliveryFee: numeric("delivery_fee", { precision: 12, scale: 2 }).default("0"),
   deliveryNotes: text("delivery_notes"),
+  driverId: uuid("driver_id").references(() => drivers.id),
   driverName: varchar("driver_name", { length: 255 }),
   driverPhone: varchar("driver_phone", { length: 20 }),
 
@@ -104,6 +123,7 @@ export const onlineOrders = pgTable("online_orders", {
   statusIdx: index("idx_online_orders_status").on(table.status),
   orderNumberIdx: uniqueIndex("idx_online_orders_number").on(table.orderNumber),
   paymentStatusIdx: index("idx_online_orders_payment").on(table.paymentStatus),
+  driverIdx: index("idx_online_orders_driver").on(table.driverId),
 }));
 
 export const onlineOrderLines = pgTable("online_order_lines", {

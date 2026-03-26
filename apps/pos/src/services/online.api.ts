@@ -41,12 +41,19 @@ export const onlineApi = {
   },
 
   /**
-   * Assign driver to order
+   * Assign driver to order by driverId
    */
-  assignDriver: (orderId: string, driverName: string, driverPhone: string) => {
+  assignDriver: (orderId: string, driverName: string, driverPhone: string, driverId?: string) => {
     return request<{ success: true }>(`/api/admin/online/orders/${orderId}/assign-driver`, {
       method: 'PUT',
-      body: JSON.stringify({ driverName, driverPhone }),
+      body: JSON.stringify(driverId ? { driverId } : { driverName, driverPhone }),
     });
+  },
+
+  /**
+   * List available drivers for a branch
+   */
+  getDrivers: (branchId: string) => {
+    return request<{ id: string; name: string; phone: string; status: string }[]>(`/api/admin/online/drivers?branchId=${branchId}`);
   },
 };

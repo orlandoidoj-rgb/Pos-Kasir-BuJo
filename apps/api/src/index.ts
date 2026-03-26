@@ -8,6 +8,8 @@ import onlineStoreRoutes from './routes/online-store.routes';
 import onlineCustomerRoutes from './routes/online-customer.routes';
 import onlineAdminRoutes from './routes/online-admin.routes';
 import onlineWebhookRoutes from './routes/online-webhook.routes';
+import onlineAuthRoutes from './routes/online-auth.routes';
+import driverRoutes from './routes/driver.routes';
 import { sendSuccess } from './utils/response';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -28,9 +30,11 @@ app.use('/api', posRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api', procurementRoutes);
 app.use('/api/online', onlineStoreRoutes);
+app.use('/api/online/auth', onlineAuthRoutes);
 app.use('/api/online/customer', onlineCustomerRoutes);
 app.use('/api/admin/online', onlineAdminRoutes);
 app.use('/api/webhooks', onlineWebhookRoutes);
+app.use('/api/driver', driverRoutes);
 
 // ─── Global Error Handler ────────────────────────────────────────────────────
 app.use(errorHandler);

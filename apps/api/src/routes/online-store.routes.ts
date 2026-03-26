@@ -3,17 +3,16 @@ import { getStoreBySlug, getStoreMenu } from '../services/online-store.service';
 import { createOnlineOrder } from '../services/online-store.service';
 import { asyncHandler } from '../utils/asyncHandler';
 import { sendSuccess } from '../utils/response';
+import { db } from '../lib/db';
 
 const router = Router();
 
 router.get('/:slug', asyncHandler(async (req: Request, res: Response) => {
-  const db = {} as any; // Placeholder
   const result = await getStoreBySlug(db, req.params.slug);
   return sendSuccess(res, result);
 }));
 
 router.get('/:slug/menu', asyncHandler(async (req: Request, res: Response) => {
-  const db = {} as any; // Placeholder
   const store = await getStoreBySlug(db, req.params.slug);
   if (!store) throw new Error("Store not found");
 
@@ -22,7 +21,6 @@ router.get('/:slug/menu', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 router.post('/:slug/checkout', asyncHandler(async (req: Request, res: Response) => {
-  const db = {} as any; // Placeholder
   const store = await getStoreBySlug(db, req.params.slug);
   if (!store) throw new Error("Store not found");
 

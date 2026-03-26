@@ -1,5 +1,5 @@
 import { sql, inArray } from "drizzle-orm";
-import { stockMoves, productStocks } from "@warung-bujo/database/src/schema/inventory.schema";
+import { stockMoves, productStocks } from "@warung-bujo/database";
 
 export interface StockMoveInput {
   branchId: string;

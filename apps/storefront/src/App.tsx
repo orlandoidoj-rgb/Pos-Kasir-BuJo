@@ -6,6 +6,8 @@ import { CheckoutPage } from './components/checkout/CheckoutPage';
 import { OrderListPage } from './components/order/OrderListPage';
 import { OrderDetailPage } from './components/order/OrderDetailPage';
 import { LandingPage } from './components/LandingPage';
+import { LoginPage } from './components/LoginPage';
+import { ProfilePage } from './components/ProfilePage';
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
           <Route path="orders" element={<OrderListPage />} />
           <Route path="orders/:orderId" element={<OrderDetailPage />} />
         </Route>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/" element={<LandingPage />} />
       </Routes>
     </Router>
