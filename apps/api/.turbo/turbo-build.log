@@ -6,7 +6,10 @@
 [34mCLI[39m Building entry: src/server.ts
 [34mCLI[39m Using tsconfig: tsconfig.json
 [34mCLI[39m tsup v7.3.0
-[34mCLI[39m Target: esnext
+[34mCLI[39m Using tsup config: /home/ubuntu/Pos-Kasir-BuJo/apps/api/tsup.config.ts
+[34mCLI[39m Target: node20
+[34mCLI[39m Cleaning output folder
 [34mCJS[39m Build start
-[32mCJS[39m [1mdist/server.js [22m[32m45.85 KB[39m
-[32mCJS[39m ⚡️ Build success in 123ms
+[32mCJS[39m [1mdist/server.js     [22m[32m126.90 KB[39m
+[32mCJS[39m [1mdist/server.js.map [22m[32m236.83 KB[39m
+[32mCJS[39m ⚡️ Build success in 219ms

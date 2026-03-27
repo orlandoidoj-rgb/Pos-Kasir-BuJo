@@ -775,7 +775,7 @@ export default function Branches() {
   const handleSave = (data: BranchFormState) => {
     let updated: Branch[];
     if (modalTarget === 'new') {
-      const newId = `CBG-${String(branches.length + 1).padStart(3, '0')}`;
+      const newId = crypto.randomUUID();
       updated = [...branches, {
         id: newId, nama: data.nama, alamat: data.alamat, kota: data.kota,
         status: data.status, manager: data.manager || '(belum ditentukan)', telp: data.telp || '—',

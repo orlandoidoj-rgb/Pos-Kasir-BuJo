@@ -8,6 +8,7 @@ import { OrderListPage } from '@/components/order/OrderListPage';
 import { OrderDetailPage } from '@/components/order/OrderDetailPage';
 import { LoginPage } from '@/components/auth/LoginPage';
 import { RegisterPage } from '@/components/auth/RegisterPage';
+import { CompleteProfilePage } from '@/components/auth/CompleteProfilePage';
 import { ProfilePage } from '@/components/auth/ProfilePage';
 import { MyAccountPage } from '@/components/auth/MyAccountPage';
 import { LandingPage } from '@/components/LandingPage';
@@ -26,6 +27,7 @@ function App() {
           </Route>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/complete-profile" element={<CompleteProfilePage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/my-account" element={<MyAccountPage />} />
           <Route path="/" element={<LandingPage />} />

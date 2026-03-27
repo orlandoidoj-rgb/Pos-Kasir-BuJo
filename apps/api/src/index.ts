@@ -13,6 +13,10 @@ import driverRoutes from './routes/driver.routes';
 import authRoutes from './routes/auth.routes';
 import adminUsersRoutes from './routes/admin-users.routes';
 import customerSyncRoutes from './routes/customer-sync.routes';
+import branchesRoutes from './routes/branches.routes';
+import productsRoutes from './routes/products.routes';
+import categoriesRoutes from './routes/categories.routes';
+import vouchersRoutes from './routes/vouchers.routes';
 import { sendSuccess } from './utils/response';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -41,6 +45,10 @@ app.use('/api/driver', driverRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/users', adminUsersRoutes);
 app.use('/api/customer', customerSyncRoutes);
+app.use('/api/branches', branchesRoutes);
+app.use('/api/products', productsRoutes);
+app.use('/api/categories', categoriesRoutes);
+app.use('/api/vouchers', vouchersRoutes);
 
 // ─── Global Error Handler ────────────────────────────────────────────────────
 app.use(errorHandler);

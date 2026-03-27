@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Screen, BranchInfo, TxRaw, OrderSetup } from '../types';
 import { loadBranches, savePOSSession, clearPOSSession } from '../utils';
-import { TX_STORAGE } from '../config';
+import { TX_STORAGE, BRANCHES_KEY } from '../config';
 
 export function useSession() {
   const [screen, setScreen] = useState<Screen>('login');
@@ -50,6 +50,20 @@ export function useSession() {
   const closeHistory = useCallback(() => {
     setIsHistoryOpen(false);
     setSelectedHistoryTx(null);
+  }, []);
+
+  // Fetch branches from API on startup to ensure UUIDs (not legacy CBG-xxx IDs)
+  useEffect(() => {
+    fetch('/api/branches')
+      .then(r => r.json())
+      .then(json => {
+        const apiBranches: BranchInfo[] = json?.data ?? json;
+        if (Array.isArray(apiBranches) && apiBranches.length > 0) {
+          localStorage.setItem(BRANCHES_KEY, JSON.stringify(apiBranches));
+          setBranches(apiBranches);
+        }
+      })
+      .catch(() => { /* keep localStorage fallback */ });
   }, []);
 
   useEffect(() => {

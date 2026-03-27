@@ -1,8 +1,11 @@
-import { pgTable, uuid, varchar, boolean, numeric, text, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, boolean, numeric, text, timestamp, index } from "drizzle-orm/pg-core";
 
 export const categories = pgTable("categories", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const products = pgTable("products", {
@@ -15,6 +18,9 @@ export const products = pgTable("products", {
   categoryId: uuid("category_id").references(() => categories.id),
   isSellable: boolean("is_sellable").default(true).notNull(),
   isRawMaterial: boolean("is_raw_material").default(false).notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   categoryIdx: index("idx_products_category").on(table.categoryId),
 }));

@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, text, numeric, integer, timestamp, boolean, index } from "drizzle-orm/pg-core";
-import { users } from "./auth.schema";
+import { users, branches } from "./auth.schema";
 
 // ─── Promos & Vouchers ─────────────────────────────────────────────────────────
 
@@ -14,10 +14,13 @@ export const promosVouchers = pgTable("promos_vouchers", {
   maxDiscount: numeric("max_discount", { precision: 12, scale: 2 }).default("0"),
   usageLimit: integer("usage_limit").default(0).notNull(), // 0 = unlimited
   usageCount: integer("usage_count").default(0).notNull(),
+  perUserLimit: integer("per_user_limit").default(1).notNull(), // max 1 use per user by default
+  branchId: uuid("branch_id").references(() => branches.id), // null = global, set = branch-specific
   validFrom: timestamp("valid_from"),
   validUntil: timestamp("valid_until"),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // ─── User ↔ Voucher Junction ────────────────────────────────────────────────────

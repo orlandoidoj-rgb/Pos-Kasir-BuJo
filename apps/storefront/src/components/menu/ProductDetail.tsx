@@ -8,25 +8,27 @@ import { Plus, Minus, X, Star, Share2 } from 'lucide-react';
 
 interface ProductDetailProps {
   product: MenuItem | null;
+  isOpen: boolean;
   onClose: () => void;
   onAddToCart: (product: MenuItem, qty: number, notes: string) => void;
 }
 
-export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailProps) {
+export function ProductDetail({ product, isOpen, onClose, onAddToCart }: ProductDetailProps) {
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState('');
 
-  if (!product) return null;
-
   const handleAddToCart = () => {
+    if (!product) return;
     onAddToCart(product, qty, notes);
     setQty(1);
     setNotes('');
     onClose();
   };
 
+  if (!product) return null;
+
   return (
-    <BottomSheet isOpen={!!product} onClose={onClose}>
+    <BottomSheet isOpen={isOpen} onClose={onClose}>
       <div className="relative pb-24" id="product-detail-modal">
         {/* Header Image */}
         <div className="relative h-64 w-full bg-gray-100 overflow-hidden">
@@ -102,13 +104,13 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
               <Plus className="w-4 h-4" strokeWidth={3} />
             </button>
           </div>
-          
+
           <Button
             fullWidth
             onClick={handleAddToCart}
             id="add-to-cart-confirm-btn"
           >
-            Tambah ke Keranjang
+            Tambah {qty > 1 ? `${qty}x` : ''} {formatRupiah(Number(product.price) * qty)}
           </Button>
         </div>
       </div>
