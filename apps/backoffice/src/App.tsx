@@ -28,8 +28,8 @@ import Loyalty from './pages/Loyalty';
 const navItems = [
   { to: '/',          icon: LayoutDashboard, label: 'Dashboard',       end: true },
   { to: '/branches',  icon: Store,           label: 'Cabang & Users'           },
-  { to: '/products',  icon: ShoppingBag,     label: 'Produk / Katalog'         },
-  { to: '/inventory', icon: Package,         label: 'Inventory / BOM'          },
+  { to: '/products',  icon: ShoppingBag,     label: 'Produk & Resep'           },
+  { to: '/inventory', icon: Package,         label: 'Inventory'                },
   { to: '/crm',       icon: Users,           label: 'CRM / Partners'           },
   { to: '/finance',   icon: Wallet,          label: 'Finance / Jurnal'         },
   { to: '/loyalty',   icon: Gift,            label: 'Voucher / Loyalty'        },
@@ -39,8 +39,8 @@ const navItems = [
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/':          { title: 'Dashboard',          subtitle: 'Ringkasan performa bisnis hari ini'             },
   '/branches':  { title: 'Cabang & Users',     subtitle: 'Manajemen lokasi dan pengguna per cabang'       },
-  '/products':  { title: 'Produk / Katalog',   subtitle: 'Katalog menu yang tampil di aplikasi POS kasir' },
-  '/inventory': { title: 'Inventory & BOM',    subtitle: 'Stok bahan baku & setting resep produk'         },
+  '/products':  { title: 'Produk & Resep',    subtitle: 'Katalog menu, harga, dan resep BOM produk'     },
+  '/inventory': { title: 'Inventory',          subtitle: 'Stok bahan baku, pengadaan, dan distribusi'    },
   '/crm':       { title: 'CRM / Partners',     subtitle: 'Kelola supplier dan pelanggan bisnis'           },
   '/finance':   { title: 'Finance / Jurnal',   subtitle: 'Laporan keuangan & pembukuan double-entry'      },
   '/loyalty':   { title: 'Voucher & Loyalty',  subtitle: 'Manajemen voucher, promo, dan program poin pelanggan' },
@@ -155,7 +155,7 @@ function Sidebar() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/backoffice">
       <div className="flex h-screen w-full bg-white overflow-hidden font-body">
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-56">

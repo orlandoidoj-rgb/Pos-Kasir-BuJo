@@ -1,5 +1,12 @@
 import { OrderType } from './order';
 
+export interface StockBatch {
+  id: string;
+  qty: number;
+  buyPrice: number;
+  date: string;
+}
+
 export interface BackofficeProduct {
   id: string; 
   name: string; 
@@ -38,4 +45,5 @@ export interface BranchStockItem {
   stok: number; 
   stokMin: number; 
   harga: number;
+  batches?: StockBatch[];
 }

@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   VOUCHERS:        'warung_bujo_vouchers',
   LOYALTY_CONFIG:  'warung_bujo_loyalty_config',
   ACCOUNTS:        'warung_bujo_accounts',
+  TRANSFERS:       'warung_bujo_transfers',
 } as const;
 
 // ─── Order Types ─────────────────────────────────────────────────────────────
@@ -97,51 +98,28 @@ export interface BOMLine {
   unit:         string;
 }
 
-/** BOM default: productId → daftar bahan baku */
-export const DEFAULT_BOM: Record<string, BOMLine[]> = {
-  'PRD-001': [ // Ayam Penyet Lalapan
-    { materialId: 'BHN-002', materialName: 'Ayam Fillet',   qty: 0.20,  unit: 'Kg'    },
-    { materialId: 'BHN-001', materialName: 'Beras Pandan',  qty: 0.15,  unit: 'Kg'    },
-    { materialId: 'BHN-003', materialName: 'Minyak Goreng', qty: 0.05,  unit: 'Liter' },
-    { materialId: 'BHN-004', materialName: 'Garam Halus',   qty: 0.005, unit: 'Kg'    },
-  ],
-  'PRD-002': [ // Bebek Bakar Madu
-    { materialId: 'BHN-002', materialName: 'Ayam Fillet',   qty: 0.25,  unit: 'Kg'    },
-    { materialId: 'BHN-006', materialName: 'Gula Pasir',    qty: 0.03,  unit: 'Kg'    },
-    { materialId: 'BHN-003', materialName: 'Minyak Goreng', qty: 0.04,  unit: 'Liter' },
-  ],
-  'PRD-003': [ // Lele Goreng Crispy
-    { materialId: 'BHN-003', materialName: 'Minyak Goreng', qty: 0.08,  unit: 'Liter' },
-    { materialId: 'BHN-008', materialName: 'Tepung Terigu', qty: 0.05,  unit: 'Kg'    },
-    { materialId: 'BHN-004', materialName: 'Garam Halus',   qty: 0.003, unit: 'Kg'    },
-  ],
-  'PRD-004': [ // Nasi Goreng Spesial
-    { materialId: 'BHN-001', materialName: 'Beras Pandan',  qty: 0.20,  unit: 'Kg'    },
-    { materialId: 'BHN-003', materialName: 'Minyak Goreng', qty: 0.03,  unit: 'Liter' },
-    { materialId: 'BHN-004', materialName: 'Garam Halus',   qty: 0.003, unit: 'Kg'    },
-    { materialId: 'BHN-006', materialName: 'Gula Pasir',    qty: 0.005, unit: 'Kg'    },
-  ],
-  'PRD-007': [ // Es Teh Manis Jumbo
-    { materialId: 'BHN-005', materialName: 'Teh Celup',     qty: 1,     unit: 'Pcs'   },
-    { materialId: 'BHN-006', materialName: 'Gula Pasir',    qty: 0.025, unit: 'Kg'    },
-  ],
-  'PRD-008': [ // Es Jeruk Nipis
-    { materialId: 'BHN-006', materialName: 'Gula Pasir',    qty: 0.02,  unit: 'Kg'    },
-  ],
-  'PRD-009': [ // Paket Hemat A
-    { materialId: 'BHN-002', materialName: 'Ayam Fillet',   qty: 0.20,  unit: 'Kg'    },
-    { materialId: 'BHN-001', materialName: 'Beras Pandan',  qty: 0.15,  unit: 'Kg'    },
-    { materialId: 'BHN-003', materialName: 'Minyak Goreng', qty: 0.05,  unit: 'Liter' },
-    { materialId: 'BHN-005', materialName: 'Teh Celup',     qty: 1,     unit: 'Pcs'   },
-    { materialId: 'BHN-006', materialName: 'Gula Pasir',    qty: 0.025, unit: 'Kg'    },
-  ],
-};
+/** BOM default: productId → daftar bahan baku (dikosongkan — user mulai dari nol) */
+export const DEFAULT_BOM: Record<string, BOMLine[]> = {};
 
 export function getBOM(): Record<string, BOMLine[]> {
   try {
     const s = localStorage.getItem(STORAGE_KEYS.BOM);
     return s ? JSON.parse(s) : { ...DEFAULT_BOM };
   } catch { return { ...DEFAULT_BOM }; }
+}
+
+export function saveBOM(bom: Record<string, BOMLine[]>) {
+  localStorage.setItem(STORAGE_KEYS.BOM, JSON.stringify(bom));
+}
+
+export function saveBOMForProduct(productId: string, lines: BOMLine[]) {
+  const bom = getBOM();
+  if (lines.length === 0) {
+    delete bom[productId];
+  } else {
+    bom[productId] = lines;
+  }
+  saveBOM(bom);
 }
 
 // ─── Material Prices ──────────────────────────────────────────────────────────
@@ -158,12 +136,19 @@ export const DEFAULT_MATERIAL_PRICES: Record<string, MaterialPrice> = {
   'BHN-001': { name: 'Beras Pandan',  pricePerUnit: 12000, unit: 'Kg',    updatedAt: '2026-03-01' },
   'BHN-002': { name: 'Ayam Fillet',   pricePerUnit: 45000, unit: 'Kg',    updatedAt: '2026-03-01' },
   'BHN-003': { name: 'Minyak Goreng', pricePerUnit: 18000, unit: 'Liter', updatedAt: '2026-03-01' },
-  'BHN-004': { name: 'Garam Halus',   pricePerUnit:  5000, unit: 'Kg',    updatedAt: '2026-03-01' },
+  'BHN-004': { name: "Garam Halus",   pricePerUnit:  5000, unit: 'Kg',    updatedAt: '2026-03-01' },
   'BHN-005': { name: 'Teh Celup',     pricePerUnit:  8500, unit: 'Kotak', updatedAt: '2026-03-01' },
   'BHN-006': { name: 'Gula Pasir',    pricePerUnit: 14000, unit: 'Kg',    updatedAt: '2026-03-01' },
   'BHN-007': { name: 'Sambal Terasi', pricePerUnit: 25000, unit: 'Kg',    updatedAt: '2026-03-01' },
   'BHN-008': { name: 'Tepung Terigu', pricePerUnit:  9000, unit: 'Kg',    updatedAt: '2026-03-01' },
 };
+
+export interface StockBatch {
+  id: string;
+  qty: number;
+  buyPrice: number;
+  date: string;
+}
 
 export function getMaterialPrices(): Record<string, MaterialPrice> {
   try {
@@ -179,21 +164,35 @@ export function saveMaterialPrice(materialId: string, data: MaterialPrice) {
 }
 
 /**
- * Hitung HPP produk dari BOM + harga bahan baku terkini.
- * Contoh: beras 0.15Kg × 15000/Kg = 2250
+ * Hitung HPP produk dari BOM + harga bahan baku (menggunakan FIFO dari batch aktif).
  */
 export function calculateHPP(productId: string): { total: number; lines: Array<{ name: string; qty: number; unit: string; unitPrice: number; cost: number }> } {
   const bom    = getBOM();
-  const prices = getMaterialPrices();
+  const allStock = getAllBranchStock(); // Helper needed to aggregate or pick primary
+  const primaryBranch = 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1';
+  const branchStock = allStock[primaryBranch] ?? [];
+  
   const lines  = bom[productId] ?? [];
   let total = 0;
+  
   const detail = lines.map(l => {
-    const mat      = prices[l.materialId];
-    const unitPrice = mat?.pricePerUnit ?? 0;
-    const cost     = l.qty * unitPrice;
+    const stockItem = branchStock.find(s => s.materialId === l.materialId);
+    let unitPrice = 0;
+    
+    if (stockItem && stockItem.batches && stockItem.batches.length > 0) {
+      // Untuk benchmark HPP, kita gunakan weighted average dari batch yang MASIH ADA
+      const totalQty = stockItem.batches.reduce((sum, b) => sum + b.qty, 0);
+      const totalVal = stockItem.batches.reduce((sum, b) => sum + (b.qty * b.buyPrice), 0);
+      unitPrice = totalQty > 0 ? totalVal / totalQty : stockItem.harga;
+    } else {
+      unitPrice = stockItem?.harga ?? 0;
+    }
+    
+    const cost = l.qty * unitPrice;
     total += cost;
-    return { name: l.materialName, qty: l.qty, unit: l.unit, unitPrice, cost };
+    return { name: l.materialName, qty: l.qty, unit: l.unit, unitPrice: Math.round(unitPrice), cost: Math.round(cost) };
   });
+  
   return { total: Math.round(total), lines: detail };
 }
 
@@ -288,49 +287,53 @@ export interface BranchStockItem {
   satuan:       string;
   stok:         number;
   stokMin:      number;
-  harga:        number;
+  harga:        number; // Ini akan berfungsi sebagai Current Average Price
+  batches?:     StockBatch[];
 }
 
 export const DEFAULT_BRANCH_STOCK: Record<string, BranchStockItem[]> = {
   'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': [
-    { materialId: 'BHN-001', materialName: 'Beras Pandan',  satuan: 'Kg',    stok: 45,  stokMin: 10, harga: 12000 },
-    { materialId: 'BHN-002', materialName: 'Ayam Fillet',   satuan: 'Kg',    stok: 8.5, stokMin: 5,  harga: 45000 },
-    { materialId: 'BHN-003', materialName: 'Minyak Goreng', satuan: 'Liter', stok: 20,  stokMin: 8,  harga: 18000 },
-    { materialId: 'BHN-004', materialName: 'Garam Halus',   satuan: 'Kg',    stok: 3,   stokMin: 1,  harga: 5000  },
-    { materialId: 'BHN-005', materialName: 'Teh Celup',     satuan: 'Kotak', stok: 12,  stokMin: 5,  harga: 8500  },
-    { materialId: 'BHN-006', materialName: 'Gula Pasir',    satuan: 'Kg',    stok: 18,  stokMin: 5,  harga: 14000 },
-    { materialId: 'BHN-007', materialName: 'Sambal Terasi', satuan: 'Kg',    stok: 2.1, stokMin: 3,  harga: 25000 },
-    { materialId: 'BHN-008', materialName: 'Tepung Terigu', satuan: 'Kg',    stok: 30,  stokMin: 10, harga: 9000  },
+    { materialId: 'BHN-001', materialName: 'Beras Pandan',  satuan: 'Kg',    stok: 45,  stokMin: 10, harga: 12000, batches: [{ id: 'B1-001', qty: 45, buyPrice: 12000, date: '2026-03-01' }] },
+    { materialId: 'BHN-002', materialName: 'Ayam Fillet',   satuan: 'Kg',    stok: 8.5, stokMin: 5,  harga: 45000, batches: [{ id: 'B2-001', qty: 8.5, buyPrice: 45000, date: '2026-03-01' }] },
+    { materialId: 'BHN-003', materialName: 'Minyak Goreng', satuan: 'Liter', stok: 20,  stokMin: 8,  harga: 18000, batches: [{ id: 'B3-001', qty: 20, buyPrice: 18000, date: '2026-03-01' }] },
+    { materialId: 'BHN-004', materialName: 'Garam Halus',   satuan: 'Kg',    stok: 3,   stokMin: 1,  harga: 5000,  batches: [{ id: 'B4-001', qty: 3, buyPrice: 5000, date: '2026-03-01' }] },
+    { materialId: 'BHN-005', materialName: 'Teh Celup',     satuan: 'Kotak', stok: 12,  stokMin: 5,  harga: 8500,  batches: [{ id: 'B5-001', qty: 12, buyPrice: 8500, date: '2026-03-01' }] },
+    { materialId: 'BHN-006', materialName: 'Gula Pasir',    satuan: 'Kg',    stok: 18,  stokMin: 5,  harga: 14000, batches: [{ id: 'B6-001', qty: 18, buyPrice: 14000, date: '2026-03-01' }] },
+    { materialId: 'BHN-007', materialName: 'Sambal Terasi', satuan: 'Kg',    stok: 2.1, stokMin: 3,  harga: 25000, batches: [{ id: 'B7-001', qty: 2.1, buyPrice: 25000, date: '2026-03-01' }] },
+    { materialId: 'BHN-008', materialName: 'Tepung Terigu', satuan: 'Kg',    stok: 30,  stokMin: 10, harga: 9000,  batches: [{ id: 'B8-001', qty: 30, buyPrice: 9000, date: '2026-03-01' }] },
   ],
   'dfda8a9c-7e8e-4a8e-9522-320e52e189d2': [
-    { materialId: 'BHN-001', materialName: 'Beras Pandan',  satuan: 'Kg',    stok: 12,  stokMin: 8,  harga: 12000 },
-    { materialId: 'BHN-002', materialName: 'Ayam Fillet',   satuan: 'Kg',    stok: 3,   stokMin: 4,  harga: 45000 },
-    { materialId: 'BHN-003', materialName: 'Minyak Goreng', satuan: 'Liter', stok: 6,   stokMin: 4,  harga: 18000 },
-    { materialId: 'BHN-005', materialName: 'Teh Celup',     satuan: 'Kotak', stok: 3,   stokMin: 5,  harga: 8500  },
-    { materialId: 'BHN-006', materialName: 'Gula Pasir',    satuan: 'Kg',    stok: 5,   stokMin: 3,  harga: 14000 },
-    { materialId: 'BHN-007', materialName: 'Sambal Terasi', satuan: 'Kg',    stok: 0.8, stokMin: 2,  harga: 25000 },
+    { materialId: 'BHN-001', materialName: 'Beras Pandan',  satuan: 'Kg',    stok: 12,  stokMin: 8,  harga: 12000, batches: [{ id: 'B1-002', qty: 12, buyPrice: 12000, date: '2026-03-01' }] },
+    { materialId: 'BHN-002', materialName: 'Ayam Fillet',   satuan: 'Kg',    stok: 3,   stokMin: 4,  harga: 45000, batches: [{ id: 'B2-002', qty: 3, buyPrice: 45000, date: '2026-03-01' }] },
+    { materialId: 'BHN-003', materialName: 'Minyak Goreng', satuan: 'Liter', stok: 6,   stokMin: 4,  harga: 18000, batches: [{ id: 'B3-002', qty: 6, buyPrice: 18000, date: '2026-03-01' }] },
+    { materialId: 'BHN-005', materialName: 'Teh Celup',     satuan: 'Kotak', stok: 3,   stokMin: 5,  harga: 8500,  batches: [{ id: 'B5-002', qty: 3, buyPrice: 8500, date: '2026-03-01' }] },
+    { materialId: 'BHN-006', materialName: 'Gula Pasir',    satuan: 'Kg',    stok: 5,   stokMin: 3,  harga: 14000, batches: [{ id: 'B6-002', qty: 5, buyPrice: 14000, date: '2026-03-01' }] },
+    { materialId: 'BHN-007', materialName: 'Sambal Terasi', satuan: 'Kg',    stok: 0.8, stokMin: 2,  harga: 25000, batches: [{ id: 'B7-002', qty: 0.8, buyPrice: 25000, date: '2026-03-01' }] },
   ],
   'dfda8a9c-7e8e-4a8e-9522-320e52e189d3': [
-    { materialId: 'BHN-001', materialName: 'Beras Pandan',  satuan: 'Kg',    stok: 20,  stokMin: 8,  harga: 12000 },
-    { materialId: 'BHN-002', materialName: 'Ayam Fillet',   satuan: 'Kg',    stok: 5,   stokMin: 4,  harga: 45000 },
-    { materialId: 'BHN-003', materialName: 'Minyak Goreng', satuan: 'Liter', stok: 10,  stokMin: 6,  harga: 18000 },
-    { materialId: 'BHN-006', materialName: 'Gula Pasir',    satuan: 'Kg',    stok: 2,   stokMin: 3,  harga: 14000 },
+    { materialId: 'BHN-001', materialName: 'Beras Pandan',  satuan: 'Kg',    stok: 20,  stokMin: 8,  harga: 12000, batches: [{ id: 'B1-003', qty: 20, buyPrice: 12000, date: '2026-03-01' }] },
+    { materialId: 'BHN-002', materialName: 'Ayam Fillet',   satuan: 'Kg',    stok: 5,   stokMin: 4,  harga: 45000, batches: [{ id: 'B2-003', qty: 5, buyPrice: 45000, date: '2026-03-01' }] },
+    { materialId: 'BHN-003', materialName: 'Minyak Goreng', satuan: 'Liter', stok: 10,  stokMin: 6,  harga: 18000, batches: [{ id: 'B3-003', qty: 10, buyPrice: 18000, date: '2026-03-01' }] },
+    { materialId: 'BHN-006', materialName: 'Gula Pasir',    satuan: 'Kg',    stok: 2,   stokMin: 3,  harga: 14000, batches: [{ id: 'B6-003', qty: 2, buyPrice: 14000, date: '2026-03-01' }] },
   ],
   'dfda8a9c-7e8e-4a8e-9522-320e52e189d4': [],
 };
 
-export function getBranchStock(branchId: string): BranchStockItem[] {
+export function getAllBranchStock(): Record<string, BranchStockItem[]> {
   try {
     const s = localStorage.getItem(STORAGE_KEYS.BRANCH_STOCK);
-    const all: Record<string, BranchStockItem[]> = s ? JSON.parse(s) : { ...DEFAULT_BRANCH_STOCK };
-    return all[branchId] ?? DEFAULT_BRANCH_STOCK[branchId] ?? [];
-  } catch { return DEFAULT_BRANCH_STOCK[branchId] ?? []; }
+    return s ? JSON.parse(s) : { ...DEFAULT_BRANCH_STOCK };
+  } catch { return { ...DEFAULT_BRANCH_STOCK }; }
+}
+
+export function getBranchStock(branchId: string): BranchStockItem[] {
+  const all = getAllBranchStock();
+  return all[branchId] ?? DEFAULT_BRANCH_STOCK[branchId] ?? [];
 }
 
 export function saveBranchStock(branchId: string, stock: BranchStockItem[]) {
   try {
-    const s = localStorage.getItem(STORAGE_KEYS.BRANCH_STOCK);
-    const all: Record<string, BranchStockItem[]> = s ? JSON.parse(s) : { ...DEFAULT_BRANCH_STOCK };
+    const all = getAllBranchStock();
     all[branchId] = stock;
     localStorage.setItem(STORAGE_KEYS.BRANCH_STOCK, JSON.stringify(all));
   } catch { /* ignore */ }
@@ -630,6 +633,7 @@ export const DEFAULT_ACCOUNTS: Account[] = [
   { id: '7', code: '3201', name: 'Laba Ditahan', category: 'Modal', subCategory: 'Ekuitas', balance: 0 },
   { id: '8', code: '4101', name: 'Penjualan Food & Beverage', category: 'Pendapatan', subCategory: 'Pendapatan Operasional', balance: 0 },
   { id: '9', code: '5101', name: 'Beban Bahan Baku', category: 'HPP', subCategory: 'HPP', balance: 0 },
+  { id: '13', code: '5102', name: 'Selisih Fluktuatif Bahan Baku', category: 'HPP', subCategory: 'HPP', balance: 0 },
   { id: '10', code: '6101', name: 'Gaji Karyawan', category: 'Beban', subCategory: 'Beban Operasional', balance: 0 },
   { id: '11', code: '6102', name: 'Sewa Tempat', category: 'Beban', subCategory: 'Beban Operasional', balance: 0 },
   { id: '12', code: '6103', name: 'Listrik / Air', category: 'Beban', subCategory: 'Beban Operasional', balance: 0 },
@@ -644,4 +648,31 @@ export function loadAccounts(): Account[] {
 
 export function saveAccounts(accounts: Account[]) {
   localStorage.setItem(STORAGE_KEYS.ACCOUNTS || 'warung_bujo_accounts', JSON.stringify(accounts));
+}
+
+// ─── Transfer History ──────────────────────────────────────────────────────────
+
+export interface TransferHistory {
+  id: string;
+  date: string;
+  fromBranchId: string;
+  toBranchId: string;
+  notes: string;
+  items: {
+    materialId: string;
+    materialName: string;
+    qty: number;
+    unit: string;
+  }[];
+}
+
+export function getTransfers(): TransferHistory[] {
+  try {
+    const s = localStorage.getItem(STORAGE_KEYS.TRANSFERS);
+    return s ? JSON.parse(s) : [];
+  } catch { return []; }
+}
+
+export function saveTransfers(transfers: TransferHistory[]) {
+  localStorage.setItem(STORAGE_KEYS.TRANSFERS, JSON.stringify(transfers));
 }

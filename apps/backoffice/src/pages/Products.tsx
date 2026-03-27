@@ -4,13 +4,26 @@ import {
   Package, Plus, Search, Edit2, Eye, EyeOff, X, Store,
   ShoppingBag, Filter, CheckCircle2, Trash2, Tag, UploadCloud,
   FolderOpen, Image as ImageIcon, ChevronDown, ChevronRight,
-  Calculator, BookOpen, RefreshCw,
+  Calculator, BookOpen, RefreshCw, RotateCcw,
 } from 'lucide-react';
 import {
   STORAGE_KEYS, ORDER_TYPES, ORDER_TYPE_META,
   MasterProduct, ProductPrices, BOMLine,
   slugify, compressImage, calculateHPP, getMaterialPrices, getBOM,
+  saveBOMForProduct, getBranchStock,
 } from '../lib/storage';
+
+// ─── Raw Material Options (for BOM editor dropdown) ─────────────────────────
+const RAW_MATERIAL_OPTIONS = [
+  { id: 'BHN-001', name: 'Beras Pandan', unit: 'Kg' },
+  { id: 'BHN-002', name: 'Ayam Fillet', unit: 'Kg' },
+  { id: 'BHN-003', name: 'Minyak Goreng', unit: 'Liter' },
+  { id: 'BHN-004', name: 'Garam Halus', unit: 'Kg' },
+  { id: 'BHN-005', name: 'Teh Celup', unit: 'Kotak' },
+  { id: 'BHN-006', name: 'Gula Pasir', unit: 'Kg' },
+  { id: 'BHN-007', name: 'Sambal Terasi', unit: 'Kg' },
+  { id: 'BHN-008', name: 'Tepung Terigu', unit: 'Kg' },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -194,8 +207,18 @@ function ProductModal({ initial, onSave, onClose }: {
   const [showBOM, setShowBOM] = useState(false);
   const [hppTab, setHppTab] = useState<'manual' | 'auto'>('auto');
   const fileRef = useRef<HTMLInputElement>(null);
+  const [bomLines, setBomLines] = useState<BOMLine[]>([]);
 
-  // Hitung HPP dari BOM saat produk dimuat
+  // Load BOM lines for this product
+  useEffect(() => {
+    const productId = initial?.id ?? '';
+    if (productId) {
+      const bom = getBOM();
+      setBomLines(bom[productId] ?? []);
+    }
+  }, [initial?.id]);
+
+  // Hitung HPP dari BOM saat produk dimuat atau bomLines berubah
   useEffect(() => {
     const productId = initial?.id ?? '';
     const result = calculateHPP(productId);
@@ -262,7 +285,31 @@ function ProductModal({ initial, onSave, onClose }: {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
     const id = initial?.id ?? `PRD-${String(Date.now()).slice(-6)}`;
-    onSave({ id, ...form, branchActivations: initial?.branchActivations ?? { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true } });
+    // Save BOM for this product
+    saveBOMForProduct(id, bomLines);
+    // Recalculate HPP after saving BOM
+    const hpp = calculateHPP(id);
+    const finalPurchasePrice = hppTab === 'auto' && hpp.total > 0 ? hpp.total : form.purchasePrice;
+    onSave({ id, ...form, purchasePrice: finalPurchasePrice, branchActivations: initial?.branchActivations ?? { 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1': true } });
+  };
+
+  // BOM editor helpers
+  const addBomLine = () => {
+    setBomLines(prev => [...prev, { materialId: '', materialName: '', qty: 0, unit: '' }]);
+  };
+  const removeBomLine = (idx: number) => {
+    setBomLines(prev => prev.filter((_, i) => i !== idx));
+  };
+  const updateBomLine = (idx: number, field: keyof BOMLine, value: string | number) => {
+    setBomLines(prev => prev.map((line, i) => {
+      if (i !== idx) return line;
+      if (field === 'materialId') {
+        const mat = RAW_MATERIAL_OPTIONS.find(m => m.id === value);
+        return { ...line, materialId: value as string, materialName: mat?.name ?? '', unit: mat?.unit ?? '' };
+      }
+      if (field === 'qty') return { ...line, qty: Number(value) };
+      return { ...line, [field]: value };
+    }));
   };
 
   const catName = CATEGORIES.find(c => c.id === form.categoryId)?.name ?? '';
@@ -519,6 +566,58 @@ function ProductModal({ initial, onSave, onClose }: {
             </div>
           </div>
 
+          {/* ── Resep BOM ── */}
+          <div className="rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <BookOpen size={15} className="text-indigo-600" />
+                <span className="text-sm font-bold text-slate-700">Resep BOM</span>
+                <span className="text-[10px] text-slate-400 ml-1">{bomLines.length} bahan</span>
+              </div>
+              <button
+                type="button"
+                onClick={addBomLine}
+                className="flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-all"
+              >
+                <Plus size={11} /> Tambah Bahan
+              </button>
+            </div>
+            <div className="p-4 space-y-2">
+              {bomLines.length === 0 ? (
+                <p className="text-xs text-slate-400 py-3 text-center">Belum ada resep. Klik "Tambah Bahan" untuk mulai.</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-[1fr_80px_60px_32px] gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                    <span>Bahan Baku</span><span>Qty / Porsi</span><span>Satuan</span><span></span>
+                  </div>
+                  {bomLines.map((line, idx) => (
+                    <div key={idx} className="grid grid-cols-[1fr_80px_60px_32px] gap-2 items-center">
+                      <select
+                        value={line.materialId}
+                        onChange={e => updateBomLine(idx, 'materialId', e.target.value)}
+                        className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-indigo-400 transition-all"
+                      >
+                        <option value="">-- Pilih --</option>
+                        {RAW_MATERIAL_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
+                      <input
+                        type="number" min="0" step="0.001"
+                        value={line.qty || ''}
+                        onChange={e => updateBomLine(idx, 'qty', e.target.value)}
+                        placeholder="0"
+                        className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-indigo-400 transition-all"
+                      />
+                      <span className="text-xs text-slate-500 font-medium truncate">{line.unit || '–'}</span>
+                      <button type="button" onClick={() => removeBomLine(idx)} className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+
           {/* ── Toggle Status ── */}
           <div className="grid grid-cols-2 gap-4">
             {[
@@ -630,6 +729,15 @@ export default function Products() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [pageTab, setPageTab] = useState<PageTab>('list');
   const [modalTarget, setModalTarget] = useState<MasterProduct | null | 'new'>(undefined as any);
+  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
+
+  const toggleFlip = (id: string) => {
+    setFlippedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (searchParams.get('add') === '1') {
@@ -748,14 +856,11 @@ export default function Products() {
       {/* Gallery Tab */}
       {pageTab === 'gallery' && <MediaGallery products={products} />}
 
-      {/* List Tab */}
+      {/* List Tab — Flip Card Grid */}
       {pageTab === 'list' && (
-        <div className="glass-card overflow-hidden">
-          <div className="px-6 py-4 bg-slate-50/70 border-b border-slate-100 flex justify-between items-center">
-            <div>
-              <h3 className="font-bold text-slate-800">Katalog Produk</h3>
-              <p className="text-xs text-slate-500 mt-0.5">{filtered.length} produk</p>
-            </div>
+        <>
+          <div className="flex justify-between items-center">
+            <p className="text-xs text-slate-500 font-semibold">{filtered.length} produk · Klik kartu untuk lihat resep BOM</p>
             <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1">
               {(['all', 'active', 'inactive'] as const).map(s => (
                 <button key={s} onClick={() => setStatusFilter(s)}
@@ -765,107 +870,138 @@ export default function Products() {
               ))}
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  {['Produk', 'Kategori', 'Dine-in', 'T-Away', 'Online', 'HPP', 'Margin', 'POS', 'Status', 'Aksi'].map(h => (
-                    <th key={h} className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.map(p => {
-                  const cat    = CATEGORIES.find(c => c.id === p.categoryId);
-                  const margin = p.prices['Dine-in'] > 0 && p.purchasePrice > 0
-                    ? Math.round(((p.prices['Dine-in'] - p.purchasePrice) / p.prices['Dine-in']) * 100)
-                    : null;
-                  const onlineAvg = Math.round((p.prices['Shopee'] + p.prices['Grab'] + p.prices['Gofood']) / 3);
-                  return (
-                    <tr key={p.id} className={`hover:bg-slate-50 transition-colors ${!p.isActive ? 'opacity-50' : ''}`}>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
-                            {p.image
-                              ? <img src={p.image} alt="" className="w-full h-full object-cover" onError={e => e.currentTarget.remove()} />
-                              : <div className="w-full h-full flex items-center justify-center"><ImageIcon size={12} className="text-slate-300" /></div>
-                            }
-                          </div>
-                          <div>
-                            <p className="font-semibold text-slate-800 text-sm leading-tight">{p.name}</p>
-                            <p className="text-[10px] font-mono text-slate-400">{p.id} · {p.unit}</p>
+
+          {filtered.length === 0 ? (
+            <div className="glass-card py-16 flex flex-col items-center justify-center">
+              <Package size={40} className="text-slate-200 mb-3" />
+              <p className="text-sm text-slate-400">Tidak ada produk.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {filtered.map(p => {
+                const cat = CATEGORIES.find(c => c.id === p.categoryId);
+                const margin = p.prices['Dine-in'] > 0 && p.purchasePrice > 0
+                  ? Math.round(((p.prices['Dine-in'] - p.purchasePrice) / p.prices['Dine-in']) * 100) : null;
+                const isFlipped = flippedCards.has(p.id);
+                const bom = getBOM();
+                const bomForProduct = bom[p.id] ?? [];
+                const prices = getMaterialPrices();
+
+                return (
+                  <div key={p.id} className={`flip-card ${isFlipped ? 'flipped' : ''} ${!p.isActive ? 'opacity-60' : ''}`} style={{ height: '340px' }}>
+                    <div className="flip-card-inner">
+                      {/* ── FRONT ── */}
+                      <div className="flip-card-front bg-white border border-slate-200 shadow-sm flex flex-col">
+                        {/* Image */}
+                        <div className="h-32 bg-slate-100 relative overflow-hidden shrink-0">
+                          {p.image ? (
+                            <img src={p.image} alt="" className="w-full h-full object-cover" onError={e => e.currentTarget.remove()} />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center"><ImageIcon size={28} className="text-slate-200" /></div>
+                          )}
+                          <span className={`absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded-full ${p.isActive && p.isSellable ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                            {p.isActive && p.isSellable ? 'Live' : 'Off'}
+                          </span>
+                          <span className="absolute top-2 right-2 px-2 py-0.5 bg-white/90 backdrop-blur-sm text-[10px] font-bold rounded-full text-indigo-700 border border-indigo-100">
+                            <Tag size={8} className="inline mr-0.5" />{cat?.name ?? '–'}
+                          </span>
+                        </div>
+                        {/* Info */}
+                        <div className="flex-1 p-3.5 flex flex-col">
+                          <p className="font-bold text-slate-800 text-sm leading-snug line-clamp-2">{p.name}</p>
+                          <p className="text-[10px] font-mono text-slate-400 mt-0.5">{p.id} · {p.unit}</p>
+                          <div className="mt-auto pt-2 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-slate-500">Dine-in</span>
+                              <span className="text-sm font-black text-slate-800">Rp {p.prices['Dine-in'].toLocaleString('id-ID')}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-slate-500">HPP</span>
+                              <span className="text-xs font-bold text-slate-600">{p.purchasePrice > 0 ? `Rp ${p.purchasePrice.toLocaleString('id-ID')}` : '–'}</span>
+                            </div>
+                            {margin !== null && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-slate-500">Margin</span>
+                                <span className={`text-xs font-bold ${margin >= 30 ? 'text-emerald-600' : margin >= 15 ? 'text-amber-600' : 'text-red-600'}`}>{margin}%</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-bold rounded-full">
-                          <Tag size={8} className="inline mr-0.5" />{cat?.name ?? '–'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm font-bold text-slate-800">
-                        Rp {p.prices['Dine-in'].toLocaleString('id-ID')}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
-                        Rp {p.prices['Take-away'].toLocaleString('id-ID')}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-500">
-                        <span title={`Shopee: ${p.prices['Shopee'].toLocaleString()} | Grab: ${p.prices['Grab'].toLocaleString()} | GoFood: ${p.prices['Gofood'].toLocaleString()}`} className="cursor-help">
-                          ~Rp {onlineAvg.toLocaleString('id-ID')}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-500">
-                        {p.purchasePrice > 0 ? `Rp ${p.purchasePrice.toLocaleString('id-ID')}` : '–'}
-                      </td>
-                      <td className="px-4 py-3">
-                        {margin !== null ? (
-                          <span className={`text-sm font-bold ${margin >= 30 ? 'text-emerald-600' : margin >= 15 ? 'text-amber-600' : 'text-red-600'}`}>
-                            {margin}%
-                          </span>
-                        ) : '–'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                          p.isSellable && p.isActive
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-slate-100 text-slate-500 border border-slate-200'
-                        }`}>
-                          {p.isSellable && p.isActive ? 'Live' : 'Off'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button onClick={() => toggleActive(p.id)} className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all ${
-                          p.isActive
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                            : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
-                        }`}>
-                          {p.isActive ? <><Eye size={8} className="inline" /> Aktif</> : <><EyeOff size={8} className="inline" /> Off</>}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => setModalTarget(p)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg transition-all">
+                        {/* Actions */}
+                        <div className="px-3.5 pb-3 flex items-center gap-1.5">
+                          <button onClick={() => toggleFlip(p.id)} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-600 hover:text-indigo-700 text-[11px] font-semibold rounded-lg transition-all">
+                            <BookOpen size={11} /> Resep
+                          </button>
+                          <button onClick={() => setModalTarget(p)} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-semibold rounded-lg transition-all">
                             <Edit2 size={11} /> Edit
                           </button>
-                          <button onClick={() => handleDelete(p.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                            <Trash2 size={13} />
+                          <button onClick={() => handleDelete(p.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                            <Trash2 size={12} />
                           </button>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {filtered.length === 0 && (
-                  <tr><td colSpan={10} className="px-5 py-12 text-center text-slate-400">
-                    <Package size={32} className="mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">Tidak ada produk.</p>
-                  </td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                      </div>
+
+                      {/* ── BACK (BOM) ── */}
+                      <div className="flip-card-back bg-white border border-slate-200 shadow-sm flex flex-col">
+                        <div className="px-4 py-3 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between shrink-0">
+                          <div className="flex items-center gap-2">
+                            <BookOpen size={14} className="text-indigo-600" />
+                            <span className="text-xs font-bold text-indigo-800 truncate">{p.name}</span>
+                          </div>
+                          <button onClick={() => toggleFlip(p.id)} className="p-1 hover:bg-indigo-100 rounded-lg transition-all">
+                            <RotateCcw size={13} className="text-indigo-600" />
+                          </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-3.5">
+                          {bomForProduct.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-center">
+                              <BookOpen size={24} className="text-slate-200 mb-2" />
+                              <p className="text-xs text-slate-400">Belum ada resep BOM</p>
+                              <button onClick={() => setModalTarget(p)} className="mt-2 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700">
+                                + Tambah Resep
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {bomForProduct.map((line, i) => {
+                                const mat = prices[line.materialId];
+                                const cost = mat ? mat.pricePerUnit * line.qty : 0;
+                                return (
+                                  <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-slate-50">
+                                    <div>
+                                      <p className="font-medium text-slate-700">{line.materialName}</p>
+                                      <p className="text-[10px] text-slate-400">{line.qty} {line.unit}</p>
+                                    </div>
+                                    <span className="font-bold text-slate-600">Rp {Math.round(cost).toLocaleString('id-ID')}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                        {bomForProduct.length > 0 && (
+                          <div className="px-3.5 py-2.5 bg-indigo-50 border-t border-indigo-100 shrink-0">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-600">Total HPP</span>
+                              <span className="text-sm font-black text-indigo-700">
+                                Rp {bomForProduct.reduce((sum, l) => sum + (prices[l.materialId]?.pricePerUnit ?? 0) * l.qty, 0).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        <div className="px-3.5 pb-3 pt-1 shrink-0">
+                          <button onClick={() => setModalTarget(p)} className="w-full flex items-center justify-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold rounded-lg transition-all">
+                            <Edit2 size={11} /> Edit Produk & Resep
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* Modal */}

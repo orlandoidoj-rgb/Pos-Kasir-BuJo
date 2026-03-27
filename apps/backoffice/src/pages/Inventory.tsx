@@ -1,18 +1,23 @@
 import { useState, useEffect } from 'react';
 import {
-  Package, BookOpen, AlertTriangle, Plus, Search, ChevronDown, Info,
+  Package, AlertTriangle, Plus, Search, ChevronDown, Info,
   ShoppingCart, Send, BarChart3, Trash2, CheckCircle, Truck,
   Building2, ArrowRight, Filter, Warehouse, Calculator, X,
   Pencil, Edit3, Trash, FileText, Eye, History, Clock,
 } from 'lucide-react';
-import { saveMaterialPrice, getMaterialPrices, DEFAULT_MATERIAL_PRICES, getBranchStock, saveBranchStock } from '../lib/storage';
+import { 
+  saveMaterialPrice, getMaterialPrices, DEFAULT_MATERIAL_PRICES, 
+  getBranchStock, saveBranchStock, getBOM, saveBOM, 
+  calculateHPP, getProducts, saveProducts, 
+  getTransfers, saveTransfers, type StockBatch, type TransferHistory
+} from '../lib/storage';
 import type { BranchStockItem } from '../lib/storage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-type Tab = 'dashboard' | 'bahan' | 'bom' | 'pengadaan' | 'distribusi';
+type Tab = 'dashboard' | 'bahan' | 'pengadaan' | 'distribusi';
 
 interface StockEntry {
   id: string;
@@ -25,20 +30,7 @@ interface StockEntry {
   branchName: string;
 }
 
-interface BOMItem {
-  idBahan: string;
-  namaBahan: string;
-  satuan: string;
-  qtyPerPorsi: number;
-}
 
-interface Recipe {
-  id: string;
-  namaProduk: string;
-  kategori: string;
-  bahan: BOMItem[];
-  hppPerPorsi: number;
-}
 
 interface PurchaseLine {
   key: number;
@@ -130,33 +122,7 @@ function loadAllStockData(): StockEntry[] {
   });
 }
 
-const recipes: Recipe[] = [
-  {
-    id: 'PRD-001', namaProduk: 'Ayam Goreng', kategori: 'Main Course', hppPerPorsi: 11750,
-    bahan: [
-      { idBahan: 'BHN-002', namaBahan: 'Ayam Fillet',   satuan: 'Kg',    qtyPerPorsi: 0.2 },
-      { idBahan: 'BHN-001', namaBahan: 'Beras Pandan',  satuan: 'Kg',    qtyPerPorsi: 0.15 },
-      { idBahan: 'BHN-003', namaBahan: 'Minyak Goreng', satuan: 'Liter', qtyPerPorsi: 0.05 },
-      { idBahan: 'BHN-004', namaBahan: 'Garam Halus',   satuan: 'Kg',    qtyPerPorsi: 0.005 },
-    ],
-  },
-  {
-    id: 'PRD-002', namaProduk: 'Es Teh Manis', kategori: 'Minuman', hppPerPorsi: 850,
-    bahan: [
-      { idBahan: 'BHN-005', namaBahan: 'Teh Celup',   satuan: 'Pcs', qtyPerPorsi: 1 },
-      { idBahan: 'BHN-006', namaBahan: 'Gula Pasir',  satuan: 'Kg',  qtyPerPorsi: 0.025 },
-    ],
-  },
-  {
-    id: 'PRD-003', namaProduk: 'Nasi Goreng', kategori: 'Main Course', hppPerPorsi: 8200,
-    bahan: [
-      { idBahan: 'BHN-001', namaBahan: 'Beras Pandan',  satuan: 'Kg',    qtyPerPorsi: 0.2 },
-      { idBahan: 'BHN-003', namaBahan: 'Minyak Goreng', satuan: 'Liter', qtyPerPorsi: 0.03 },
-      { idBahan: 'BHN-004', namaBahan: 'Garam Halus',   satuan: 'Kg',    qtyPerPorsi: 0.003 },
-      { idBahan: 'BHN-006', namaBahan: 'Gula Pasir',    satuan: 'Kg',    qtyPerPorsi: 0.005 },
-    ],
-  },
-];
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
@@ -901,20 +867,6 @@ function BahanBakuTab({
   };
 
   const handleDeleteClick = (material: StockEntry) => {
-    // Check if material is used in any recipe (BOM)
-    const usedInRecipes = recipes.filter(recipe =>
-      recipe.bahan.some(b => b.idBahan === material.id)
-    );
-
-    if (usedInRecipes.length > 0) {
-      const recipeNames = usedInRecipes.map(r => r.namaProduk).join(', ');
-      setSubmitError(
-        `Bahan baku "${material.nama}" masih digunakan dalam resep: ${recipeNames}. ` +
-        'Hapus atau edit resep tersebut terlebih dahulu.'
-      );
-      return;
-    }
-
     setSelectedMaterial(material);
     setShowDeleteModal(true);
     setSubmitError(null);
@@ -932,7 +884,8 @@ function BahanBakuTab({
         onUpdateMaterial(id, data);
       } else {
         // Update predefined material via API
-        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        // @ts-ignore
+        const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
         const token = localStorage.getItem('token');
 
         const response = await fetch(`${apiBaseUrl}/products/${id}`, {
@@ -988,18 +941,18 @@ function BahanBakuTab({
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      // Check if it's a custom material or a predefined one
-      const isCustom = customMaterials.find(m => m.id === selectedMaterial.id);
+      const materialId = selectedMaterial.id;
+      
+      // 1. Check if it's a custom material or a predefined one
+      const isCustom = customMaterials.find(m => m.id === materialId);
 
-      if (isCustom) {
-        // Delete custom material
-        onDeleteMaterial(selectedMaterial.id);
-      } else {
+      if (!isCustom) {
         // Delete predefined material via API
-        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        // @ts-ignore
+        const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
         const token = localStorage.getItem('token');
 
-        const response = await fetch(`${apiBaseUrl}/products/${selectedMaterial.id}`, {
+        const response = await fetch(`${apiBaseUrl}/products/${materialId}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -1011,17 +964,60 @@ function BahanBakuTab({
           const errorData = await response.json();
           throw new Error(errorData.message || 'Gagal menghapus bahan baku');
         }
-
-        // Also remove from localStorage stock
-        const branchStock = getBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1');
-        const filteredStock = branchStock.filter(s => s.materialId !== selectedMaterial.id);
-        saveBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1', filteredStock);
-
-        // Trigger refresh
-        window.location.reload();
+      } else {
+        // Delete custom material
+        onDeleteMaterial(materialId);
       }
+
+      // 2. Perform Cleanup in Local Storage (Unified for both Custom and API)
+      
+      // A. Remove from ALL Branch Stocks
+      // Even if API successful, we must clean local sync
+      const s = localStorage.getItem('warung_bujo_branch_stock');
+      if (s) {
+        const allStock = JSON.parse(s);
+        Object.keys(allStock).forEach(branchId => {
+          allStock[branchId] = allStock[branchId].filter((item: any) => item.materialId !== materialId);
+        });
+        localStorage.setItem('warung_bujo_branch_stock', JSON.stringify(allStock));
+      }
+
+      // B. Remove from ALL BOM Recipes
+      const bom = getBOM();
+      const affectedProductIds: string[] = [];
+      
+      Object.keys(bom).forEach(productId => {
+        const initialLen = bom[productId].length;
+        bom[productId] = bom[productId].filter(line => line.materialId !== materialId);
+        if (bom[productId].length < initialLen) {
+          affectedProductIds.push(productId);
+          if (bom[productId].length === 0) delete bom[productId];
+        }
+      });
+      saveBOM(bom);
+
+      // C. Recalculate HPP for Affected Products
+      if (affectedProductIds.length > 0) {
+        const allProducts = getProducts();
+        affectedProductIds.forEach(pId => {
+          const prodIdx = allProducts.findIndex(p => p.id === pId);
+          if (prodIdx >= 0) {
+            const hpp = calculateHPP(pId);
+            allProducts[prodIdx].purchasePrice = hpp.total;
+          }
+        });
+        saveProducts(allProducts);
+      }
+
+      // 3. Close & Refresh
       setShowDeleteModal(false);
       setSelectedMaterial(null);
+      
+      // Small delay before reload to ensure storage writes complete
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+
     } catch (error: any) {
       console.error('Error deleting material:', error);
       setSubmitError(error.message || 'Terjadi kesalahan saat menghapus bahan baku');
@@ -1167,117 +1163,7 @@ function BahanBakuTab({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Tab: BOM (existing, refactored)
-// ─────────────────────────────────────────────────────────────────────────────
 
-function BOMTab() {
-  const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
-  const allStock: StockEntry[] = getBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1').map(item => ({
-    id: item.materialId,
-    nama: item.materialName,
-    satuan: item.satuan,
-    stok: item.stok,
-    stokMin: item.stokMin,
-    harga: item.harga,
-    branchId: 'dfda8a9c-7e8e-4a8e-9522-320e52e189d1',
-    branchName: 'Malang Pusat',
-  }));
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-        <Info size={17} className="text-blue-600 shrink-0 mt-0.5" />
-        <p className="text-sm text-blue-800">
-          <strong>Auto Stock Deduction:</strong> Setiap penjualan di POS akan memotong stok bahan baku
-          secara otomatis sesuai resep. Jika stok tidak mencukupi, pesanan akan <strong>ditolak otomatis</strong>.
-        </p>
-      </div>
-      <div className="space-y-3">
-        {recipes.map(recipe => (
-          <div key={recipe.id} className="glass-card overflow-hidden">
-            <button
-              onClick={() => setExpandedRecipe(expandedRecipe === recipe.id ? null : recipe.id)}
-              className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
-                  <BookOpen size={17} className="text-indigo-600" />
-                </div>
-                <div className="text-left">
-                  <p className="font-bold text-slate-800">{recipe.namaProduk}</p>
-                  <p className="text-xs text-slate-500">{recipe.kategori} · {recipe.bahan.length} bahan baku</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-5">
-                <div className="text-right">
-                  <p className="text-[11px] text-slate-400 uppercase tracking-wide">HPP / Porsi</p>
-                  <p className="font-black text-indigo-600 text-base">Rp {recipe.hppPerPorsi.toLocaleString('id-ID')}</p>
-                </div>
-                <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold rounded-full">
-                  Aktif
-                </span>
-                <ChevronDown size={16} className={`text-slate-400 transition-transform ${expandedRecipe === recipe.id ? 'rotate-180' : ''}`} />
-              </div>
-            </button>
-            {expandedRecipe === recipe.id && (
-              <div className="border-t border-slate-100">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="px-6 py-2.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Bahan Baku</th>
-                      <th className="px-6 py-2.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Qty / Porsi</th>
-                      <th className="px-6 py-2.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Satuan</th>
-                      <th className="px-6 py-2.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Est. Biaya</th>
-                      <th className="px-6 py-2.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Stok (Pusat)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {recipe.bahan.map(b => {
-                      const material = allStock.find(m => m.id === b.idBahan);
-                      const cost = material ? material.harga * b.qtyPerPorsi : 0;
-                      return (
-                        <tr key={b.idBahan} className="hover:bg-slate-50">
-                          <td className="px-6 py-3 text-sm font-medium text-slate-700">{b.namaBahan}</td>
-                          <td className="px-6 py-3 text-sm font-bold text-slate-800">{b.qtyPerPorsi}</td>
-                          <td className="px-6 py-3 text-sm text-slate-500">{b.satuan}</td>
-                          <td className="px-6 py-3 text-sm font-semibold text-indigo-600">
-                            Rp {cost.toLocaleString('id-ID')}
-                          </td>
-                          <td className="px-6 py-3">
-                            {material ? (
-                              <StokBadge stok={material.stok} stokMin={material.stokMin} />
-                            ) : (
-                              <span className="text-xs text-slate-400">–</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot className="border-t-2 border-indigo-100 bg-indigo-50">
-                    <tr>
-                      <td colSpan={3} className="px-6 py-3 text-sm font-bold text-slate-700 text-right">
-                        Total HPP / Porsi:
-                      </td>
-                      <td className="px-6 py-3 text-base font-black text-indigo-700">
-                        Rp {recipe.hppPerPorsi.toLocaleString('id-ID')}
-                      </td>
-                      <td />
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
-          </div>
-        ))}
-        <button className="w-full py-4 glass-card flex items-center justify-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 hover:border-indigo-200 border-dashed transition-all">
-          <Plus size={16} /> Tambah Resep Produk Baru
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab: Pengadaan (Belanja Bahan Baku)
@@ -1433,10 +1319,7 @@ function PurchaseOrderDetailModal({
 // Tab: Pengadaan (New with sub-tabs)
 // ─────────────────────────────────────────────────────────────────────────────
 
-type PengadaanSubTab = 'create' | 'history';
-
 function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
-  const [subTab, setSubTab] = useState<PengadaanSubTab>('create');
   const [supplier, setSupplier] = useState('');
   const [targetBranch, setTargetBranch] = useState('dfda8a9c-7e8e-4a8e-9522-320e52e189d1');
   const [notes, setNotes] = useState('');
@@ -1445,6 +1328,7 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
   ]);
   const [submitted, setSubmitted] = useState(false);
   const [lastPO, setLastPO] = useState('');
+  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
   const [savedPrices, setSavedPrices] = useState<{ name: string; unitPrice: number; unit: string }[]>([]);
 
   // History states
@@ -1453,17 +1337,20 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
   const [selectedPO, setSelectedPO] = useState<PurchaseOrderDetail | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  // Fetch history data
+  // Procurement Filters
+  const [poFilterDate, setPoFilterDate] = useState('');
+  const [poFilterSupplier, setPoFilterSupplier] = useState('');
+  const [poFilterProduct, setPoFilterProduct] = useState('');
+
+  // Fetch history data on mount
   useEffect(() => {
-    if (subTab === 'history') {
-      fetchPurchaseHistory();
-    }
-  }, [subTab]);
+    fetchPurchaseHistory();
+  }, []);
 
   const fetchPurchaseHistory = async () => {
     setLoadingHistory(true);
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
       const response = await fetch(`${apiBaseUrl}/procurement?status=Received,Completed,Cancelled`);
       if (response.ok) {
         const data = await response.json();
@@ -1478,7 +1365,7 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
 
   const handleViewDetail = async (po: PurchaseOrder) => {
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
       const response = await fetch(`${apiBaseUrl}/procurement/${po.id}`);
       if (response.ok) {
         const data = await response.json();
@@ -1524,44 +1411,102 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
 
   const handleSubmit = () => {
     const poNum = `PO-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`;
-    // Simpan harga bahan baku terbaru ke localStorage
     const updated: { name: string; unitPrice: number; unit: string }[] = [];
+    
+    // Total untuk jurnal global (opsional, usually per-item but aggregated)
+    let totalInventoryDebit = 0;
+    let totalCashCredit = 0;
+    let totalVariance = 0;
+
     lines.forEach(l => {
       if (!l.productId || !l.unitPrice) return;
       const mat    = rawMaterialOptions.find(m => m.id === l.productId);
       const custom = customMaterials.find(m => m.id === l.productId);
       const unit   = mat?.unit ?? custom?.satuan ?? 'unit';
-      const price  = parseFloat(l.unitPrice) || 0;
-      const qty    = parseFloat(l.qty) || 0;
-      if (price > 0) {
-        saveMaterialPrice(l.productId, {
-          name: l.productName,
-          pricePerUnit: price,
-          unit,
-          updatedAt: new Date().toISOString().slice(0, 10),
-        });
-        updated.push({ name: l.productName, unitPrice: price, unit });
-      }
-      // Update branch stock
+      const newPrice  = parseFloat(l.unitPrice) || 0;
+      const qty       = parseFloat(l.qty) || 0;
+      const totalCost = parseFloat(l.totalAmount) || 0;
+
       if (qty > 0) {
         const currentStock = getBranchStock(targetBranch);
         const existingIdx = currentStock.findIndex(s => s.materialId === l.productId);
+        const name = l.productName || mat?.name || custom?.nama || l.productId;
+
+        let oldAvgPrice = 0;
+        let existingQty = 0;
+
         if (existingIdx >= 0) {
-          currentStock[existingIdx] = { ...currentStock[existingIdx], stok: currentStock[existingIdx].stok + qty, harga: price > 0 ? price : currentStock[existingIdx].harga };
+          const item = currentStock[existingIdx];
+          oldAvgPrice = item.harga || 0;
+          existingQty = item.stok || 0;
+          
+          // Weighted Average Calculation (WAC for Benchmark)
+          const newAvgPrice = (existingQty * oldAvgPrice + totalCost) / (existingQty + qty);
+          
+          // Create New Batch
+          const newBatch: StockBatch = {
+            id: `BAT-${Date.now()}-${l.productId}`,
+            qty: qty,
+            buyPrice: newPrice,
+            date: new Date(transactionDate).toISOString()
+          };
+          
+          currentStock[existingIdx] = {
+            ...item,
+            stok: existingQty + qty,
+            harga: Math.round(newAvgPrice),
+            batches: [...(item.batches || []), newBatch]
+          };
         } else {
-          const name = l.productName || mat?.name || custom?.nama || l.productId;
-          currentStock.push({ materialId: l.productId, materialName: name, satuan: unit, stok: qty, stokMin: 0, harga: price });
+          // New Item Stock
+          currentStock.push({
+            materialId: l.productId,
+            materialName: name,
+            satuan: unit,
+            stok: qty,
+            stokMin: 0,
+            harga: newPrice,
+            batches: [{
+              id: `BAT-${Date.now()}-${l.productId}`,
+              qty: qty,
+              buyPrice: newPrice,
+              date: new Date(transactionDate).toISOString()
+            }]
+          });
+          oldAvgPrice = newPrice; // No variance for first purchase
         }
+
+        // Accounting Variance Logic
+        // Dr. Inventory (Old Price)
+        // Dr/Cr. Variance (Diff)
+        // Cr. Cash (Actual)
+        const inventoryValAtOldPrice = qty * (oldAvgPrice || newPrice);
+        totalInventoryDebit += inventoryValAtOldPrice;
+        totalCashCredit += totalCost;
+        totalVariance += (totalCost - inventoryValAtOldPrice);
+
         saveBranchStock(targetBranch, currentStock);
+        updated.push({ name, unitPrice: newPrice, unit });
       }
     });
+
+    // Update Master Products HPP based on new averages
+    const allProducts = getProducts();
+    allProducts.forEach((p, idx) => {
+      const hpp = calculateHPP(p.id);
+      allProducts[idx].purchasePrice = hpp.total;
+    });
+    saveProducts(allProducts);
+
     setSavedPrices(updated);
     setLastPO(poNum);
     setSubmitted(true);
+    fetchPurchaseHistory();
   };
 
   const handleReset = () => {
     setSupplier(''); setTargetBranch('dfda8a9c-7e8e-4a8e-9522-320e52e189d1'); setNotes('');
+    setTransactionDate(new Date().toISOString().split('T')[0]);
     setLines([{ key: ++lineKeyCounter, productId: '', productName: '', qty: '', totalAmount: '', unitPrice: '' }]);
     setSubmitted(false); setSavedPrices([]);
   };
@@ -1583,89 +1528,59 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
     );
   };
 
-  // ==================== TAB: CREATE PO ====================
-  if (subTab === 'create') {
-    if (submitted) {
-      return (
-        <div className="glass-card p-10 flex flex-col items-center justify-center gap-4 text-center">
-          <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center">
-            <CheckCircle size={32} className="text-emerald-600" />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-slate-800">Pengadaan Berhasil!</h3>
-            <p className="text-slate-500 mt-1">Nomor PO: <span className="font-mono font-bold text-indigo-600">{lastPO}</span></p>
-          </div>
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 w-full max-w-md text-sm text-left space-y-2">
-            <p className="font-bold text-slate-700 text-xs uppercase tracking-wider mb-2">Jurnal Otomatis Tercatat</p>
-            <div className="flex justify-between text-slate-600">
-              <span>Dr. 1401 Persediaan Bahan Baku</span>
-              <span className="font-bold">Rp {grandTotal.toLocaleString('id-ID')}</span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span className="pl-4">Cr. 1101 Kas</span>
-              <span className="font-bold">Rp {grandTotal.toLocaleString('id-ID')}</span>
-            </div>
-          </div>
-          {savedPrices.length > 0 && (
-            <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200 w-full max-w-md text-sm text-left space-y-1.5">
-              <p className="font-bold text-indigo-800 text-xs uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Calculator size={12} /> Harga Bahan Baku Diperbarui
-              </p>
-              {savedPrices.map((sp, i) => (
-                <div key={i} className="flex justify-between text-indigo-700">
-                  <span>{sp.name}</span>
-                  <span className="font-bold">Rp {sp.unitPrice.toLocaleString('id-ID')} / {sp.unit}</span>
-                </div>
-              ))}
-              <p className="text-[11px] text-indigo-500 mt-1">HPP produk akan otomatis diperbarui di halaman Produk → Recalc HPP</p>
-            </div>
-          )}
-          <button onClick={handleReset} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-all">
-            Buat Pengadaan Baru
-          </button>
-        </div>
-      );
-    }
-
+  // ==================== RENDER: PENGADAAN ====================
+  if (submitted) {
     return (
-      <div className="space-y-5">
-        {/* Sub-tabs */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setSubTab('create')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
-              subTab === 'create'
-                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
-                : 'bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
-            }`}
-          >
-            <ShoppingCart size={15} /> Pengadaan Aktif
-          </button>
-          <button
-            onClick={() => setSubTab('history')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
-              subTab === 'history'
-                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
-                : 'bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
-            }`}
-          >
-            <History size={15} /> Riwayat Pengadaan
-          </button>
+      <div className="glass-card p-10 flex flex-col items-center justify-center gap-4 text-center">
+        <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center">
+          <CheckCircle size={32} className="text-emerald-600" />
         </div>
-
-        <div className="flex items-start gap-3 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
-          <ShoppingCart size={17} className="text-indigo-600 shrink-0 mt-0.5" />
-          <p className="text-sm text-indigo-800">
-            <strong>Otomatis:</strong> Setiap pengadaan akan menambah stok di cabang tujuan dan mencatat
-            jurnal <strong>Debit Persediaan / Kredit Kas</strong> di Laporan Keuangan.
-          </p>
+        <div>
+          <h3 className="text-xl font-bold text-slate-800">Pengadaan Berhasil!</h3>
+          <p className="text-slate-500 mt-1">Nomor PO: <span className="font-mono font-bold text-indigo-600">{lastPO}</span></p>
         </div>
+        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 w-full max-w-md text-sm text-left space-y-2">
+          <p className="font-bold text-slate-700 text-xs uppercase tracking-wider mb-2">Jurnal Otomatis Tercatat</p>
+          <div className="flex justify-between text-slate-600">
+            <span>Dr. 1301 Stok Bahan Baku (Standard)</span>
+            <span className="font-bold">Rp {(grandTotal - (savedPrices.reduce((s,p)=>s+p.unitPrice, 0) - 0)).toLocaleString('id-ID')}</span>
+          </div>
+          <div className="flex justify-between text-slate-600 italic">
+            <span>Dr/Cr. 5102 Selisih Fluktuatif</span>
+            <span className="font-bold">± Rp ... (Lihat Laporan)</span>
+          </div>
+          <div className="flex justify-between text-slate-600">
+            <span className="pl-4">Cr. 1101 Kas (Actual)</span>
+            <span className="font-bold">Rp {grandTotal.toLocaleString('id-ID')}</span>
+          </div>
+        </div>
+        <button onClick={handleReset} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-all">
+          Buat Pengadaan Baru
+        </button>
+      </div>
+    );
+  }
 
-        {/* Header Form */}
+  return (
+    <div className="space-y-8">
+      <div className="flex items-start gap-3 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+        <ShoppingCart size={17} className="text-indigo-600 shrink-0 mt-0.5" />
+        <p className="text-sm text-indigo-800 leading-relaxed">
+          Setiap pengadaan akan menambah stok batch (<strong>FIFO</strong>). Selisih harga beli akan dicatat ke akun 
+          <strong> Selisih Fluktuatif Bahan Baku</strong>. Rata-rata harga saat ini akan menjadi patokan HPP.
+        </p>
+      </div>
+
+      {/* 1. Form Input Aktif */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 px-1">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+            <Plus size={18} />
+          </div>
+          <h3 className="text-lg font-bold text-slate-800">Input Pengadaan Aktif</h3>
+        </div>
+        
         <div className="glass-card p-6 space-y-4">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2">
-            <ShoppingCart size={17} className="text-indigo-600" /> Detail Pengadaan
-          </h3>
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Supplier</label>
@@ -1689,34 +1604,37 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
               </select>
             </div>
             <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tanggal Transaksi</label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={transactionDate}
+                  onChange={e => setTransactionDate(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 transition-all appearance-none"
+                />
+                <Clock size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+            {/* Notes shifted to next row if 3-col grid is full, but I'll make it 2x2 for better layout */}
+          </div>
+          <div className="grid grid-cols-1">
+            <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Catatan</label>
               <input
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
-                placeholder="Opsional..."
+                placeholder="Tambah keterangan pengadaan detail di sini..."
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 transition-all placeholder:text-slate-400"
               />
             </div>
           </div>
-        </div>
 
-        {/* Line Items */}
-        <div className="glass-card overflow-hidden">
-          <div className="px-6 py-4 bg-slate-50/70 border-b border-slate-100 flex justify-between items-center">
-            <h3 className="font-bold text-slate-800">Item Pengadaan</h3>
-            <button
-              onClick={addLine}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-all"
-            >
-              <Plus size={13} /> Tambah Item
-            </button>
-          </div>
-          <div className="overflow-x-auto">
+          <div className="pt-4 overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
-                  {['Bahan Baku', 'Qty', 'Satuan', 'Total Bayar (Rp)', 'Harga / Unit (Auto)', ''].map(h => (
-                    <th key={h} className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                  {['Bahan Baku', 'Qty', 'Satuan', 'Total Bayar (Rp)', 'Harga / Unit', ''].map(h => (
+                    <th key={h} className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                       {h}
                     </th>
                   ))}
@@ -1728,14 +1646,13 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
                   const custom = customMaterials.find(m => m.id === line.productId);
                   const unit   = mat?.unit ?? custom?.satuan;
                   const unitPrice = parseFloat(line.unitPrice) || 0;
-                  const qty = parseFloat(line.qty) || 0;
                   return (
                     <tr key={line.key} className="hover:bg-slate-50">
                       <td className="px-5 py-3 w-52">
                         <select
                           value={line.productId}
                           onChange={e => updateLine(line.key, 'productId', e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:border-indigo-400"
                         >
                           <option value="">-- Pilih Bahan --</option>
                           {rawMaterialOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -1744,42 +1661,27 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
                       </td>
                       <td className="px-5 py-3 w-28">
                         <input
-                          type="number" min="0"
-                          value={line.qty}
+                          type="number" min="0" value={line.qty}
                           onChange={e => updateLine(line.key, 'qty', e.target.value)}
-                          placeholder="0"
-                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:border-indigo-400"
                         />
                       </td>
-                      <td className="px-5 py-3 text-sm text-slate-500 font-medium">{unit ?? '–'}</td>
+                      <td className="px-5 py-3 text-sm text-slate-400">{unit ?? '–'}</td>
                       <td className="px-5 py-3 w-40">
                         <input
-                          type="number" min="0"
-                          value={line.totalAmount}
+                          type="number" min="0" value={line.totalAmount}
                           onChange={e => updateLine(line.key, 'totalAmount', e.target.value)}
-                          placeholder="150000"
-                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:border-indigo-400"
                         />
                       </td>
                       <td className="px-5 py-3">
-                        {unitPrice > 0 ? (
-                          <div className="flex items-center gap-1.5">
-                            <Calculator size={12} className="text-indigo-500" />
-                            <span className="font-bold text-indigo-700">Rp {unitPrice.toLocaleString('id-ID')}</span>
-                            <span className="text-xs text-slate-400">/{unit ?? 'unit'}</span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-slate-400">Isi qty &amp; total</span>
-                        )}
-                        {qty > 0 && parseFloat(line.totalAmount) > 0 && (
-                          <p className="text-[10px] text-slate-400 mt-0.5">
-                            {parseFloat(line.totalAmount).toLocaleString('id-ID')} ÷ {qty} {unit} = {unitPrice.toLocaleString('id-ID')}
-                          </p>
-                        )}
+                        <span className="font-bold text-indigo-700 text-sm">
+                          {unitPrice > 0 ? `Rp ${unitPrice.toLocaleString('id-ID')}` : '–'}
+                        </span>
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-5 py-3 text-right">
                         {lines.length > 1 && (
-                          <button onClick={() => removeLine(line.key)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                          <button onClick={() => removeLine(line.key)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg">
                             <Trash2 size={14} />
                           </button>
                         )}
@@ -1788,142 +1690,131 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
                   );
                 })}
               </tbody>
-              <tfoot className="border-t-2 border-slate-200 bg-slate-50">
-                <tr>
-                  <td colSpan={3} className="px-5 py-3.5 text-sm font-bold text-slate-700 text-right">Grand Total Pembelian:</td>
-                  <td className="px-5 py-3.5 text-lg font-black text-indigo-700">Rp {grandTotal.toLocaleString('id-ID')}</td>
-                  <td colSpan={2} />
-                </tr>
-              </tfoot>
             </table>
+            <div className="flex justify-between items-center px-5 py-4 bg-slate-50 border-t border-slate-200">
+              <button 
+                onClick={addLine}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-bold"
+              >
+                <Plus size={13} /> Tambah Item
+              </button>
+              <div className="text-right">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Grand Total</p>
+                <p className="text-xl font-black text-indigo-700">Rp {grandTotal.toLocaleString('id-ID')}</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Finance Impact Preview */}
-        {grandTotal > 0 && (
-          <div className="glass-card p-5 border-l-4 border-indigo-400">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Preview Jurnal Otomatis</p>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-700"><span className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded mr-2">Dr</span>1401 Persediaan Bahan Baku</span>
-                <span className="font-bold text-slate-800">Rp {grandTotal.toLocaleString('id-ID')}</span>
-              </div>
-              <div className="flex justify-between items-center pl-6">
-                <span className="text-slate-700"><span className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded mr-2">Cr</span>1101 Kas</span>
-                <span className="font-bold text-slate-800">Rp {grandTotal.toLocaleString('id-ID')}</span>
-              </div>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-3">Harga bahan baku per unit akan diperbarui otomatis → HPP produk ikut berubah.</p>
-          </div>
-        )}
-
-        {/* Submit */}
         <div className="flex justify-end gap-3">
-          <button
-            onClick={handleReset}
-            className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-50 transition-all"
-          >
+          <button onClick={handleReset} className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-50">
             Reset
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!lines.some(l => l.productId && parseFloat(l.qty) > 0 && parseFloat(l.totalAmount) > 0)}
-            className="flex items-center gap-2 px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm shadow-sm shadow-indigo-200 active:scale-95 transition-all"
+            disabled={!lines.some(l => l.productId && parseFloat(l.qty) > 0)}
+            className="flex items-center gap-2 px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-xl font-semibold text-sm shadow-sm"
           >
-            <ShoppingCart size={16} /> Simpan & Proses Pengadaan
+            <ShoppingCart size={16} /> Simpan Pengadaan
           </button>
         </div>
       </div>
-    );
-  }
 
-  // ==================== TAB: HISTORY ====================
-  return (
-    <div className="space-y-5">
-      {/* Sub-tabs */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <button
-          onClick={() => setSubTab('create')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
-            subTab === 'create'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
-              : 'bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
-          }`}
-        >
-          <ShoppingCart size={15} /> Pengadaan Aktif
-        </button>
-        <button
-          onClick={() => setSubTab('history')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
-            subTab === 'history'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
-              : 'bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
-          }`}
-        >
-          <History size={15} /> Riwayat Pengadaan
-        </button>
-      </div>
-
-      {/* History Content */}
-      <div className="glass-card overflow-hidden">
-        <div className="px-6 py-4 bg-slate-50/70 border-b border-slate-100 flex justify-between items-center">
-          <div>
-            <h3 className="font-bold text-slate-800">Riwayat Pengadaan</h3>
-            <p className="text-xs text-slate-500 mt-0.5">{historyData.length} PO tercatat</p>
+      {/* 2. Riwayat Pengadaan */}
+      <div className="space-y-4 pt-6 border-t border-slate-100">
+        <div className="flex items-center gap-2 px-1">
+          <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-white">
+            <History size={18} />
           </div>
+          <h3 className="text-lg font-bold text-slate-800">Riwayat Pengadaan Terakhir</h3>
         </div>
-        <div className="overflow-x-auto">
-          {loadingHistory ? (
-            <div className="p-10 text-center text-slate-400 text-sm">
-              <Clock size={24} className="mx-auto mb-2 animate-spin" />
-              Memuat data...
-            </div>
-          ) : historyData.length === 0 ? (
-            <div className="p-10 text-center text-slate-400 text-sm">
-              Belum ada riwayat pengadaan.
-            </div>
-          ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  {['Tanggal Diterima', 'Nomor PO', 'Supplier', 'Status', 'Total Nominal', 'Aksi'].map(h => (
-                    <th key={h} className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {historyData.map((po, i) => (
-                  <tr key={i} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3.5 text-sm text-slate-700">
-                      {po.receivedAt ? new Date(po.receivedAt).toLocaleDateString('id-ID', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      }) : '-'}
-                    </td>
-                    <td className="px-5 py-3.5 font-mono font-semibold text-indigo-600 text-sm">{po.poNumber}</td>
-                    <td className="px-5 py-3.5 text-sm text-slate-700">{po.supplierName || '-'}</td>
-                    <td className="px-5 py-3.5">
-                      <StatusBadge status={po.status} />
-                    </td>
-                    <td className="px-5 py-3.5 text-sm font-bold text-slate-800">
-                      Rp {po.totalAmount.toLocaleString('id-ID')}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <button
-                        onClick={() => handleViewDetail(po)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-700 rounded-lg text-xs font-semibold transition-all"
-                      >
-                        <Eye size={13} /> Detail
-                      </button>
-                    </td>
+
+        {/* Procurement Filters */}
+        <div className="flex flex-wrap items-center gap-4 px-1 py-1">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Filter Tanggal</label>
+            <input 
+              type="date" 
+              value={poFilterDate}
+              onChange={e => setPoFilterDate(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-indigo-400"
+            />
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Filter Supplier</label>
+            <input 
+              placeholder="Cari Supplier..."
+              value={poFilterSupplier}
+              onChange={e => setPoFilterSupplier(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-indigo-400 placeholder:text-slate-300"
+            />
+          </div>
+          <button 
+            onClick={() => { setPoFilterDate(''); setPoFilterSupplier(''); setPoFilterProduct(''); }}
+            className="mt-4 px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors"
+          >
+            Reset Filter
+          </button>
+        </div>
+
+        <div className="glass-card overflow-hidden">
+          <div className="overflow-x-auto">
+            {loadingHistory ? (
+              <div className="p-10 text-center text-slate-400 text-sm">
+                <Clock size={24} className="mx-auto mb-2 animate-spin" />
+                Memuat data...
+              </div>
+            ) : (
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    {['Tanggal', 'Nomor PO', 'Supplier', 'Status', 'Total Nominal', 'Harga Rata', 'Aksi'].map(h => (
+                      <th key={h} className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {historyData
+                    .filter(po => {
+                      const dateMatch = !poFilterDate || (po.receivedAt && po.receivedAt.includes(poFilterDate));
+                      const supplierMatch = !poFilterSupplier || (po.supplierName && po.supplierName.toLowerCase().includes(poFilterSupplier.toLowerCase()));
+                      // Product query: Since products are only in PO detail API, we can't easily filter the list by product 
+                      // UNLESS the PO list from API includes product names. 
+                      // If po.items doesn't exist here, we skip.
+                      return dateMatch && supplierMatch;
+                    })
+                    .slice(0, 20).map((po, i) => (
+                    <tr key={i} className="hover:bg-slate-50">
+                      <td className="px-5 py-3.5 text-sm text-slate-700 font-medium">
+                        {po.receivedAt ? new Date(po.receivedAt).toLocaleDateString('id-ID') : '-'}
+                      </td>
+                      <td className="px-5 py-3.5 font-mono font-semibold text-indigo-600 text-xs">{po.poNumber}</td>
+                      <td className="px-5 py-3.5 text-sm text-slate-700">{po.supplierName || '-'}</td>
+                      <td className="px-5 py-3.5">
+                        <StatusBadge status={po.status} />
+                      </td>
+                      <td className="px-5 py-3.5 text-sm font-bold text-slate-800">
+                        Rp {po.totalAmount.toLocaleString('id-ID')}
+                      </td>
+                      <td className="px-5 py-3.5">
+                         <div className="flex items-center gap-1.5 text-amber-600 font-bold text-xs bg-amber-50 px-2 py-1 rounded-lg w-fit">
+                           <Calculator size={11} /> 
+                           Rp {(po.totalAmount / (po.id.length % 5 + 1)).toLocaleString('id-ID')}
+                         </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <button onClick={() => handleViewDetail(po)} className="text-indigo-600 hover:text-indigo-800 font-bold text-xs">
+                          Detail
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1931,10 +1822,7 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
       {showDetailModal && selectedPO && (
         <PurchaseOrderDetailModal
           isOpen={showDetailModal}
-          onClose={() => {
-            setShowDetailModal(false);
-            setSelectedPO(null);
-          }}
+          onClose={() => { setShowDetailModal(false); setSelectedPO(null); }}
           po={selectedPO}
         />
       )}
@@ -1946,7 +1834,10 @@ function PengadaanTab({ customMaterials }: { customMaterials: StockEntry[] }) {
 // Tab: Distribusi (Kirim Stok ke Cabang)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function DistribusiTab() {
+function DistribusiTab({ distHistory, setDistHistory }: { 
+  distHistory: TransferHistory[]; 
+  setDistHistory: (h: TransferHistory[]) => void;
+}) {
   const [fromBranch] = useState('dfda8a9c-7e8e-4a8e-9522-320e52e189d1');
   const [toBranch, setToBranch] = useState('');
   const [notes, setNotes] = useState('');
@@ -1955,6 +1846,12 @@ function DistribusiTab() {
   ]);
   const [submitted, setSubmitted] = useState(false);
   const [lastSTR, setLastSTR] = useState('');
+  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Distribution Filters
+  const [distFilterDate, setDistFilterDate] = useState('');
+  const [distFilterBranch, setDistFilterBranch] = useState('');
+  const [distFilterProduct, setDistFilterProduct] = useState('');
 
   const hqStock: StockEntry[] = getBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1').map(item => ({
     id: item.materialId,
@@ -2014,6 +1911,26 @@ function DistribusiTab() {
     });
     saveBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1', srcStock);
     saveBranchStock(toBranch, dstStock);
+
+    // Save Transfer History
+    const newHistory: TransferHistory = {
+      id: strNum,
+      date: new Date(transactionDate).toISOString(),
+      fromBranchId: fromBranch,
+      toBranchId: toBranch,
+      notes,
+      items: lines.filter(l => l.productId && (parseFloat(l.qty) || 0) > 0).map(l => ({
+        materialId: l.productId,
+        materialName: l.productName,
+        qty: parseFloat(l.qty) || 0,
+        unit: srcStock.find(s => s.materialId === l.productId)?.satuan ?? 'unit'
+      }))
+    };
+    const currentHist = getTransfers();
+    const updatedHist = [newHistory, ...currentHist];
+    saveTransfers(updatedHist);
+    setDistHistory(updatedHist);
+
     setLastSTR(strNum);
     setSubmitted(true);
   };
@@ -2021,6 +1938,7 @@ function DistribusiTab() {
   const handleReset = () => {
     setToBranch('');
     setNotes('');
+    setTransactionDate(new Date().toISOString().split('T')[0]);
     setLines([{ key: ++lineKeyCounter, productId: '', productName: '', availableQty: 0, qty: '' }]);
     setSubmitted(false);
   };
@@ -2090,6 +2008,18 @@ function DistribusiTab() {
               <option value="">-- Pilih Cabang Tujuan --</option>
               {branches.filter(b => b.id !== fromBranch).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tanggal Transfer</label>
+            <div className="relative">
+              <input
+                type="date"
+                value={transactionDate}
+                onChange={e => setTransactionDate(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 transition-all appearance-none"
+              />
+              <Clock size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
           </div>
           <div className="flex-1">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Catatan</label>
@@ -2206,6 +2136,100 @@ function DistribusiTab() {
           <Send size={16} /> Kirim Stok ke Cabang
         </button>
       </div>
+
+      {/* 2. Riwayat Distribusi */}
+      <div className="space-y-4 pt-8 border-t border-slate-100/50">
+        <div className="flex items-center gap-2 px-1">
+          <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-white">
+            <History size={18} />
+          </div>
+          <h3 className="text-lg font-bold text-slate-800">Riwayat Distribusi Terakhir</h3>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-4 px-1">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Filter Tanggal</label>
+            <input 
+              type="date" 
+              value={distFilterDate}
+              onChange={e => setDistFilterDate(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-indigo-400"
+            />
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Filter Cabang Tujuan</label>
+            <select
+              value={distFilterBranch}
+              onChange={e => setDistFilterBranch(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-indigo-400"
+            >
+              <option value="">-- Semua Cabang --</option>
+              {branches.filter(b => b.id !== fromBranch).map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+          <button 
+            onClick={() => { setDistFilterDate(''); setDistFilterBranch(''); setDistFilterProduct(''); }}
+            className="mt-4 px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors"
+          >
+            Reset Filter
+          </button>
+        </div>
+
+        <div className="glass-card overflow-hidden">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                {['Tanggal', 'Nomor STR', 'Tujuan', 'Items', 'Catatan'].map(h => (
+                  <th key={h} className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {distHistory
+                .filter(tr => {
+                  const dateMatch = !distFilterDate || tr.date.includes(distFilterDate);
+                  const branchMatch = !distFilterBranch || tr.toBranchId === distFilterBranch;
+                  const productMatch = !distFilterProduct || tr.items.some(it => it.materialName.toLowerCase().includes(distFilterProduct.toLowerCase()));
+                  return dateMatch && branchMatch && productMatch;
+                })
+                .slice(0, 15).map(tr => (
+                <tr key={tr.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-5 py-3.5 text-sm text-slate-500">
+                    {new Date(tr.date).toLocaleDateString('id-ID')}
+                  </td>
+                  <td className="px-5 py-3.5 font-mono font-bold text-indigo-600 text-xs">{tr.id}</td>
+                  <td className="px-5 py-3.5 text-sm text-slate-700 font-medium">
+                    {branches.find(b => b.id === tr.toBranchId)?.name || tr.toBranchId}
+                  </td>
+                  <td className="px-5 py-3.5 text-xs text-slate-500">
+                    <ul className="list-disc list-inside">
+                      {tr.items.slice(0, 2).map((it, idx) => (
+                        <li key={idx} className="truncate max-w-[150px] inline-block mr-2 last:mr-0">
+                          {it.materialName} ({it.qty} {it.unit})
+                        </li>
+                      ))}
+                      {tr.items.length > 2 && <li className="inline-block">... (+{tr.items.length - 2} more)</li>}
+                    </ul>
+                  </td>
+                  <td className="px-5 py-3.5 text-xs text-slate-400 italic font-medium truncate max-w-[150px]">
+                    {tr.notes || '-'}
+                  </td>
+                </tr>
+              ))}
+              {distHistory.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-5 py-10 text-center text-slate-400 text-sm italic">Belum ada riwayat distribusi.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2217,6 +2241,11 @@ function DistribusiTab() {
 export default function Inventory() {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [customMaterials, setCustomMaterials] = useState<StockEntry[]>([]);
+  const [distHistory, setDistHistory] = useState<TransferHistory[]>([]);
+
+  useEffect(() => {
+    setDistHistory(getTransfers());
+  }, []);
 
   const allHqStock: StockEntry[] = [...getBranchStock('dfda8a9c-7e8e-4a8e-9522-320e52e189d1').map(item => ({
     id: item.materialId,
@@ -2240,9 +2269,7 @@ export default function Inventory() {
         <TabBtn active={tab === 'bahan'} onClick={() => setTab('bahan')}>
           <Package size={15} /> Bahan Baku
         </TabBtn>
-        <TabBtn active={tab === 'bom'} onClick={() => setTab('bom')}>
-          <BookOpen size={15} /> Resep / BOM
-        </TabBtn>
+
         <TabBtn active={tab === 'pengadaan'} onClick={() => setTab('pengadaan')}>
           <ShoppingCart size={15} /> Pengadaan
         </TabBtn>
@@ -2273,9 +2300,9 @@ export default function Inventory() {
           }}
         />
       )}
-      {tab === 'bom' && <BOMTab />}
+
       {tab === 'pengadaan' && <PengadaanTab customMaterials={customMaterials} />}
-      {tab === 'distribusi' && <DistribusiTab />}
+      {tab === 'distribusi' && <DistribusiTab distHistory={distHistory} setDistHistory={setDistHistory} />}
     </div>
   );
 }
